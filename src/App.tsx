@@ -9,7 +9,9 @@ import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
 import Quick from "./pages/Quick";
 import Assistance from "./pages/Assistance";
+import User from "./pages/User";
 import Navbar from "./components/Navbar";
+import Header from "./components/Header";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +23,7 @@ const App = () => (
       <Sonner position="top-center" />
       <BrowserRouter>
         <div className="relative">
+          <Header />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/search" element={<Search />} />
@@ -28,6 +31,7 @@ const App = () => (
             <Route path="/orders" element={<Orders />} />
             <Route path="/quick" element={<Quick />} />
             <Route path="/assistance" element={<Assistance />} />
+            <Route path="/user" element={<User />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Navbar />

@@ -46,7 +46,7 @@ const Assistance = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-16">
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">Assistance</h1>
         <p className="text-white/90 text-sm mt-1">We're here to help</p>

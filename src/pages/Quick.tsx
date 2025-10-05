@@ -32,7 +32,7 @@ const Quick = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background pb-20 pt-16">
         <header className="gradient-primary p-4">
           <h1 className="text-2xl font-bold text-white">Quick Access</h1>
         </header>
@@ -53,7 +53,7 @@ const Quick = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 pt-16">
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">Quick Access</h1>
         <p className="text-white/90 text-sm mt-1">Browse by categories and vendors</p>

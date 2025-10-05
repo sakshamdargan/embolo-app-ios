@@ -51,7 +51,7 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background pb-20">
+      <div className="min-h-screen bg-background pb-20 pt-16">
         <header className="gradient-primary p-4">
           <h1 className="text-2xl font-bold text-white">Cart</h1>
         </header>
@@ -66,7 +66,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 pt-16">
       {/* Header */}
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">Cart</h1>

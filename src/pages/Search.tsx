@@ -59,18 +59,17 @@ const Search = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-card border-b border-border">
+    <div className="min-h-screen bg-background pb-20 pt-16">
+      {/* Search Bar */}
+      <div className="sticky top-16 z-30 bg-card border-b border-border">
         <div className="gradient-primary p-4">
-          <h1 className="text-2xl font-bold text-white mb-3">Search</h1>
           <SearchBar
             value={searchQuery}
             onChange={handleSearchChange}
             placeholder="Search for products..."
           />
         </div>
-      </header>
+      </div>
 
       {/* Search Results */}
       <main className="container mx-auto px-4 py-6">

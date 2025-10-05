@@ -1,10 +1,11 @@
 import axios from 'axios';
 
-// Replace these with your actual WooCommerce credentials
-const WC_BASE_URL = 'https://yourdomain.com/wp-json/wc/v3';
-const DOKAN_BASE_URL = 'https://yourdomain.com/wp-json/dokan/v1';
-const CONSUMER_KEY = 'your_consumer_key_here';
-const CONSUMER_SECRET = 'your_consumer_secret_here';
+// Live WooCommerce credentials
+const WC_BASE_URL = 'https://embolo.in/wp-json/wc/v3';
+const DOKAN_BASE_URL = 'https://embolo.in/wp-json/dokan/v1';
+const JWT_BASE_URL = 'https://embolo.in/wp-json/jwt-auth/v1';
+const CONSUMER_KEY = 'ck_f5bd6e9c34ae6c33b6bd7e3d4d7959a2f827cc9b';
+const CONSUMER_SECRET = 'cs_15789a6d36171155132cb8bcb36192570ef01f57';
 
 const wooCommerceAPI = axios.create({
   baseURL: WC_BASE_URL,
@@ -17,6 +18,19 @@ const wooCommerceAPI = axios.create({
 const dokanAPI = axios.create({
   baseURL: DOKAN_BASE_URL,
 });
+
+const jwtAPI = axios.create({
+  baseURL: JWT_BASE_URL,
+});
+
+// Helper to get auth token
+const getAuthToken = () => localStorage.getItem('auth_token');
+
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export interface Product {
   id: number;
@@ -162,5 +176,47 @@ export const api = {
       params: { vendor: storeId, per_page: 50 },
     });
     return response.data;
+  },
+
+  // Authentication
+  login: async (username: string, password: string) => {
+    const response = await jwtAPI.post('/token', { username, password });
+    if (response.data.token) {
+      localStorage.setItem('auth_token', response.data.token);
+      localStorage.setItem('user_email', response.data.user_email);
+      localStorage.setItem('user_id', response.data.user_id);
+    }
+    return response.data;
+  },
+
+  register: async (email: string, password: string, firstName?: string, lastName?: string) => {
+    const response = await wooCommerceAPI.post('/customers', {
+      email,
+      password,
+      first_name: firstName || '',
+      last_name: lastName || '',
+      username: email,
+    });
+    return response.data;
+  },
+
+  logout: () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_id');
+  },
+
+  getCurrentUser: async () => {
+    const userId = localStorage.getItem('user_id');
+    if (!userId) return null;
+    
+    const response = await wooCommerceAPI.get(`/customers/${userId}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data;
+  },
+
+  isAuthenticated: () => {
+    return !!getAuthToken();
   },
 };
