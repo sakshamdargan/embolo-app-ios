@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import SearchBar from '@/components/SearchBar';
+import { useEffect } from 'react';
+import SearchBarSection from '@/components/SearchBarSection';
 import ProductCard from '@/components/ProductCard';
 import ProductSkeleton from '@/components/ProductSkeleton';
 import { useProductStore } from '@/store/useProductStore';
@@ -8,9 +7,7 @@ import { api } from '@/utils/api';
 import { toast } from 'sonner';
 
 const Home = () => {
-  const navigate = useNavigate();
   const { products, setProducts, loading, setLoading } = useProductStore();
-  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadProducts();
@@ -29,26 +26,8 @@ const Home = () => {
     }
   };
 
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
-      {/* Search Bar */}
-      <div className="sticky top-16 z-30 bg-card border-b border-border">
-        <div className="gradient-primary p-4">
-          <div onClick={handleSearch}>
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Search products..."
-            />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background pb-20 pt-28">
 
       {/* Products Grid */}
       <main className="container mx-auto px-4 py-6">

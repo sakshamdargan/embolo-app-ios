@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { api } from '@/utils/api';
+import SearchBarSection from '@/components/SearchBarSection';
 import { toast } from 'sonner';
 import { User as UserIcon, Mail, Lock, LogOut, Package } from 'lucide-react';
 
@@ -92,7 +93,7 @@ const User = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-20">
+    <div className="min-h-screen bg-background pb-20 pt-28">
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">My Account</h1>
       </header>

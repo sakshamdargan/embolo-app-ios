@@ -4,6 +4,7 @@ import { useProductStore } from '@/store/useProductStore';
 import { api } from '@/utils/api';
 import { toast } from 'sonner';
 import { Store, Tag } from 'lucide-react';
+import SearchBarSection from '@/components/SearchBarSection';
 
 const Quick = () => {
   const { categories, stores, setCategories, setStores } = useProductStore();
@@ -53,7 +54,8 @@ const Quick = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background pb-20 pt-24">
+      <SearchBarSection />
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">Quick Access</h1>
         <p className="text-white/90 text-sm mt-1">Browse by categories and vendors</p>

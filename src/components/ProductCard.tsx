@@ -82,7 +82,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
           <div className="flex items-center justify-between">
             <span className="text-lg font-bold text-primary">
-              ${parseFloat(price).toFixed(2)}
+              {price && parseFloat(price) > 0 ? `$${parseFloat(price).toFixed(2)}` : 'Price on request'}
             </span>
             {stockQuantity && (
               <span className="text-xs text-muted-foreground">

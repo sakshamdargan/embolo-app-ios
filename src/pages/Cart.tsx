@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/store/useCartStore';
 import { api } from '@/utils/api';
 import { toast } from 'sonner';
+import SearchBarSection from '@/components/SearchBarSection';
 
 const Cart = () => {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
@@ -51,10 +52,8 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-16">
-        <header className="gradient-primary p-4">
-          <h1 className="text-2xl font-bold text-white">Cart</h1>
-        </header>
+      <div className="min-h-screen bg-background pb-20 pt-24">
+        <SearchBarSection />
         <div className="flex flex-col items-center justify-center py-12 px-4">
           <div className="text-center">
             <p className="text-xl font-semibold mb-2">Your cart is empty</p>
@@ -66,11 +65,12 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-16">
+    <div className="min-h-screen bg-background pb-32 pt-28">
+      
       {/* Header */}
-      <header className="gradient-primary p-4">
-        <h1 className="text-2xl font-bold text-white">Cart</h1>
-        <p className="text-white/90 text-sm mt-1">{items.length} items</p>
+      <header className="bg-gray-50 p-4">
+        <h1 className="text-2xl font-bold text-gray-900">Cart</h1>
+        <p className="text-gray-600 text-sm mt-1">{items.length} items</p>
       </header>
 
       {/* Cart Items */}

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { api, Order } from '@/utils/api';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
+import SearchBarSection from '@/components/SearchBarSection';
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,7 +73,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background pb-20 pt-28">
       <header className="gradient-primary p-4">
         <h1 className="text-2xl font-bold text-white">Orders</h1>
         <p className="text-white/90 text-sm mt-1">{orders.length} orders</p>
