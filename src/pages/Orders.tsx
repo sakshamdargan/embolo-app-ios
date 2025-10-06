@@ -76,7 +76,7 @@ const Orders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-16">
+      <div className="min-h-screen bg-background">
         <header className="gradient-primary p-4">
           <h1 className="text-2xl font-bold text-white">Orders</h1>
         </header>
@@ -96,7 +96,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background">
       <header className="gradient-primary p-6 shadow-md">
         <h1 className="text-2xl font-bold text-primary-foreground">Order History</h1>
         <p className="text-primary-foreground/90 text-sm mt-1">{orders.length} total orders</p>

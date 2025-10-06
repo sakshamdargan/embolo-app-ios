@@ -62,12 +62,10 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-6 space-y-8">
-        {/* Hero Banner with spacing below navbar */}
-        <div className="pt-2">
-          <HeroBanner />
-        </div>
+        {/* Hero Banner */}
+        <HeroBanner />
 
         <Separator className="my-8" />
 

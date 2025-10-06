@@ -93,7 +93,7 @@ const User = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background">
       <header className="gradient-primary p-6 shadow-md">
         <h1 className="text-2xl font-bold text-primary-foreground">
           {isLoggedIn ? 'My Account' : 'Login'}

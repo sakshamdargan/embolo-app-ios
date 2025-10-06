@@ -52,7 +52,7 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background pb-20 pt-24">
+      <div className="min-h-screen bg-background">
         <SearchBarSection />
         <div className="flex flex-col items-center justify-center py-12 px-4">
           <div className="text-center">
@@ -65,7 +65,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-16">
+    <div className="min-h-screen bg-background">
       <header className="gradient-primary p-6 shadow-md">
         <h1 className="text-2xl font-bold text-primary-foreground">Shopping Cart</h1>
         <p className="text-primary-foreground/90 text-sm mt-1">{items.length} items</p>

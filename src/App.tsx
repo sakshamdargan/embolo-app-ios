@@ -10,6 +10,7 @@ import Quick from "./pages/Quick";
 import Assistance from "./pages/Assistance";
 import User from "./pages/User";
 import Navbar from "./components/Navbar";
+import Layout from "./components/Layout";
 import Header from "./components/Header";
 import NotFound from "./pages/NotFound";
 
@@ -23,15 +24,17 @@ const App = () => (
       <BrowserRouter>
         <div className="relative">
           <Header />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/quick" element={<Quick />} />
-            <Route path="/assistance" element={<Assistance />} />
-            <Route path="/user" element={<User />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/quick" element={<Quick />} />
+              <Route path="/assistance" element={<Assistance />} />
+              <Route path="/user" element={<User />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
           <Navbar />
         </div>
       </BrowserRouter>
