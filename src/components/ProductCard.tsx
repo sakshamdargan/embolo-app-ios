@@ -54,7 +54,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-shadow">
+    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
       <CardContent className="p-0">
         {/* Product Image */}
         <div className="relative aspect-square bg-muted">

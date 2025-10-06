@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { api, Order } from '@/utils/api';
 import { toast } from 'sonner';
-import { Package } from 'lucide-react';
-import SearchBarSection from '@/components/SearchBarSection';
+import { Package, RotateCw } from 'lucide-react';
+import { useCartStore } from '@/store/useCartStore';
+import { useNavigate } from 'react-router-dom';
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const addItem = useCartStore((state) => state.addItem);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadOrders();
@@ -25,6 +29,25 @@ const Orders = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReorder = (order: Order) => {
+    let addedCount = 0;
+    order.line_items.forEach((item) => {
+      const itemPrice = parseFloat(item.total) / item.quantity;
+      addItem({
+        id: item.id,
+        name: item.name,
+        price: itemPrice.toFixed(2),
+        quantity: item.quantity,
+        image: item.image?.src || '/placeholder.svg',
+        stock_quantity: null,
+        vendorName: 'Vendor',
+      });
+      addedCount += item.quantity;
+    });
+    toast.success(`Added ${addedCount} items to cart from order #${order.id}`);
+    navigate('/cart');
   };
 
   const getStatusColor = (status: string) => {
@@ -73,10 +96,10 @@ const Orders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-28">
-      <header className="gradient-primary p-4">
-        <h1 className="text-2xl font-bold text-white">Orders</h1>
-        <p className="text-white/90 text-sm mt-1">{orders.length} orders</p>
+    <div className="min-h-screen bg-background pb-20 pt-16">
+      <header className="gradient-primary p-6 shadow-md">
+        <h1 className="text-2xl font-bold text-primary-foreground">Order History</h1>
+        <p className="text-primary-foreground/90 text-sm mt-1">{orders.length} total orders</p>
       </header>
 
       <main className="container mx-auto px-4 py-6">
@@ -89,44 +112,68 @@ const Orders = () => {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => (
-              <Card key={order.id} className="rounded-2xl overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+              <Card key={order.id} className="rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                <CardContent className="p-5 space-y-4">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <p className="font-semibold">Order #{order.id}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="font-bold text-lg text-foreground">Order #{order.id}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
                         {formatDate(order.date_created)}
                       </p>
                     </div>
-                    <Badge className={`${getStatusColor(order.status)} text-white`}>
+                    <Badge className={`${getStatusColor(order.status)} text-white px-3 py-1`}>
                       {order.status.toUpperCase()}
                     </Badge>
                   </div>
 
-                  <div className="space-y-2">
-                    {order.line_items.slice(0, 2).map((item) => (
+                  <div className="space-y-3 py-2">
+                    {order.line_items.slice(0, 3).map((item) => (
                       <div key={item.id} className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-muted rounded-lg" />
-                        <div className="flex-1">
+                        <div className="w-14 h-14 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
+                          {item.image?.src && (
+                            <img 
+                              src={item.image.src} 
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium line-clamp-1">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Qty: {item.quantity}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-xs text-muted-foreground">
+                              Qty: {item.quantity}
+                            </p>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <p className="text-xs font-semibold text-primary">
+                              ${parseFloat(item.total).toFixed(2)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ))}
-                    {order.line_items.length > 2 && (
-                      <p className="text-xs text-muted-foreground">
-                        +{order.line_items.length - 2} more items
+                    {order.line_items.length > 3 && (
+                      <p className="text-xs text-muted-foreground pl-1">
+                        +{order.line_items.length - 3} more items
                       </p>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <span className="text-sm font-medium">Total:</span>
-                    <span className="text-lg font-bold text-primary">
-                      ${parseFloat(order.total).toFixed(2)}
-                    </span>
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Total Amount</span>
+                      <p className="text-xl font-bold text-primary">
+                        ${parseFloat(order.total).toFixed(2)}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => handleReorder(order)}
+                      className="bg-primary hover:bg-primary/90 gap-2"
+                      size="lg"
+                    >
+                      <RotateCw className="w-4 h-4" />
+                      Reorder
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

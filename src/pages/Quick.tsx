@@ -54,11 +54,10 @@ const Quick = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-24">
-      <SearchBarSection />
-      <header className="gradient-primary p-4">
-        <h1 className="text-2xl font-bold text-white">Quick Access</h1>
-        <p className="text-white/90 text-sm mt-1">Browse by categories and vendors</p>
+    <div className="min-h-screen bg-background pb-20 pt-16">
+      <header className="gradient-primary p-6 shadow-md">
+        <h1 className="text-2xl font-bold text-primary-foreground">Quick Access</h1>
+        <p className="text-primary-foreground/90 text-sm mt-1">Shortcuts to categories and vendors</p>
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">

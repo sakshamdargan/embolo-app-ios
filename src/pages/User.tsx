@@ -93,9 +93,11 @@ const User = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 pt-28">
-      <header className="gradient-primary p-4">
-        <h1 className="text-2xl font-bold text-white">My Account</h1>
+    <div className="min-h-screen bg-background pb-20 pt-16">
+      <header className="gradient-primary p-6 shadow-md">
+        <h1 className="text-2xl font-bold text-primary-foreground">
+          {isLoggedIn ? 'My Account' : 'Login'}
+        </h1>
       </header>
 
       <main className="container mx-auto px-4 py-6">

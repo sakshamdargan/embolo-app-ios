@@ -65,18 +65,16 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 pt-28">
-      
-      {/* Header */}
-      <header className="bg-gray-50 p-4">
-        <h1 className="text-2xl font-bold text-gray-900">Cart</h1>
-        <p className="text-gray-600 text-sm mt-1">{items.length} items</p>
+    <div className="min-h-screen bg-background pb-20 pt-16">
+      <header className="gradient-primary p-6 shadow-md">
+        <h1 className="text-2xl font-bold text-primary-foreground">Shopping Cart</h1>
+        <p className="text-primary-foreground/90 text-sm mt-1">{items.length} items</p>
       </header>
 
       {/* Cart Items */}
       <main className="container mx-auto px-4 py-6 space-y-4">
         {items.map((item) => (
-          <Card key={item.id} className="overflow-hidden rounded-2xl">
+          <Card key={item.id} className="rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
             <CardContent className="p-4">
               <div className="flex gap-4">
                 <img
