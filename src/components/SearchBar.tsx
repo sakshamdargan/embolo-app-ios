@@ -3,6 +3,7 @@ import { Search, ShoppingCart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/store/useCartStore';
+import { useVendorStore } from '@/store/useVendorStore';
 import { api, Product } from '@/utils/api';
 import { toast } from 'sonner';
 
@@ -20,6 +21,7 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const { selectedVendorIds, allVendorsSelected } = useVendorStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -53,10 +55,18 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
 
     try {
       setLoading(true);
-      const results = await api.searchProducts(query.trim());
+      const results = await api.searchProducts(query.trim(), selectedVendorIds);
       
-      if (results && results.length > 0) {
-        setSearchResults(results);
+      // Filter results by selected vendors if not all vendors selected
+      let filteredResults = results;
+      if (!allVendorsSelected && selectedVendorIds.length > 0) {
+        filteredResults = results.filter(product => 
+          product.store && selectedVendorIds.includes(product.store.id)
+        );
+      }
+      
+      if (filteredResults && filteredResults.length > 0) {
+        setSearchResults(filteredResults);
         setIsOpen(true);
       } else {
         setSearchResults([]);

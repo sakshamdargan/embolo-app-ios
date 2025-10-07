@@ -95,14 +95,14 @@ export interface Store {
 
 export const api = {
   // Products
-  getProducts: async (page = 1, perPage = 20) => {
+  getProducts: async (page = 1, perPage = 20, vendorIds?: number[]) => {
     const response = await wooCommerceAPI.get<Product[]>('/products', {
       params: { page, per_page: perPage, status: 'publish' },
     });
     return response.data;
   },
 
-  searchProducts: async (searchTerm: string) => {
+  searchProducts: async (searchTerm: string, vendorIds?: number[]) => {
     try {
       const response = await wooCommerceAPI.get<Product[]>('/products', {
         params: { 

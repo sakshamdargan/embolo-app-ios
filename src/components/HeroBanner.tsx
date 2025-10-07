@@ -1,9 +1,11 @@
-import { ShoppingBag, Pill, HeartPulse, Truck } from 'lucide-react';
+import { Store, Pill, HeartPulse, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useVendorStore } from '@/store/useVendorStore';
 
 const HeroBanner = () => {
   const navigate = useNavigate();
+  const { openFilter } = useVendorStore();
 
   return (
     <div className="space-y-4">
@@ -27,12 +29,12 @@ const HeroBanner = () => {
           </div>
           <div className="flex gap-2 md:gap-3">
             <Button
-              onClick={() => navigate('/search')}
+              onClick={openFilter}
               className="bg-card text-primary hover:bg-card/90 shadow-lg hover:shadow-xl transition-all text-sm md:text-base px-4 md:px-6"
               size="default"
             >
-              <ShoppingBag className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
-              Shop Now
+              <Store className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
+              See Wholesalers
             </Button>
             <Button
               onClick={() => navigate('/orders')}

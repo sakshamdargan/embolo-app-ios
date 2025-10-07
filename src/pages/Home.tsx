@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import HeroBanner from '@/components/HeroBanner';
 import ProductSection from '@/components/ProductSection';
 import { useProductStore } from '@/store/useProductStore';
+import { useVendorStore } from '@/store/useVendorStore';
 import { api, Product } from '@/utils/api';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -9,13 +10,27 @@ import { Separator } from '@/components/ui/separator';
 
 const Home = () => {
   const { products, setProducts, loading, setLoading } = useProductStore();
+  const { selectedVendorIds, allVendorsSelected } = useVendorStore();
   const [categories, setCategories] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     loadProducts();
     loadCategories();
   }, []);
+
+  // Filter products by selected vendors
+  useEffect(() => {
+    if (allVendorsSelected) {
+      setFilteredProducts(products);
+    } else {
+      const filtered = products.filter(product => 
+        product.store && selectedVendorIds.includes(product.store.id)
+      );
+      setFilteredProducts(filtered);
+    }
+  }, [products, selectedVendorIds, allVendorsSelected]);
 
   const loadProducts = async () => {
     try {
@@ -40,21 +55,21 @@ const Home = () => {
   };
 
   const getProductsByCategory = (categoryId: number): Product[] => {
-    return products.filter(product => 
+    return filteredProducts.filter(product => 
       product.categories?.some(cat => cat.id === categoryId)
     );
   };
 
   const getFeaturedProducts = (): Product[] => {
-    return products.slice(0, 8);
+    return filteredProducts.slice(0, 8);
   };
 
   const getTopRatedProducts = (): Product[] => {
-    return products.filter(p => p.price).slice(8, 16);
+    return filteredProducts.filter(p => p.price).slice(8, 16);
   };
 
   const getBestSellingProducts = (): Product[] => {
-    return products.filter(p => p.stock_status === 'instock').slice(16, 24);
+    return filteredProducts.filter(p => p.stock_status === 'instock').slice(16, 24);
   };
 
   const handleViewAll = () => {
@@ -108,7 +123,7 @@ const Home = () => {
         <ProductSection
           title="Trending Now"
           subtitle="What's popular right now"
-          products={products.slice(0, 6)}
+          products={filteredProducts.slice(0, 6)}
           loading={loading}
           layout="grid"
           columns={2}
@@ -120,7 +135,7 @@ const Home = () => {
         <ProductSection
           title="Daily Essentials"
           subtitle="Must-have items for everyday use"
-          products={products.slice(8, 16)}
+          products={filteredProducts.slice(8, 16)}
           loading={loading}
           layout="carousel"
         />
@@ -131,7 +146,7 @@ const Home = () => {
         <ProductSection
           title="Special Offers"
           subtitle="Limited time deals and discounts"
-          products={products.slice(16, 22)}
+          products={filteredProducts.slice(16, 22)}
           loading={loading}
           layout="grid"
           columns={2}
@@ -160,33 +175,33 @@ const Home = () => {
         })}
 
         {/* New Arrivals - Grid */}
-        {!loading && products.length > 24 && (
+        {!loading && filteredProducts.length > 24 && (
           <>
             <Separator className="my-8" />
             <ProductSection
               title="New Arrivals"
               subtitle="Latest additions to our collection"
-              products={products.slice(24, 32)}
+              products={filteredProducts.slice(24, 32)}
               layout="carousel"
             />
           </>
         )}
 
         {/* All Products - Table View */}
-        {!loading && products.length > 32 && (
+        {!loading && filteredProducts.length > 32 && (
           <>
             <Separator className="my-8" />
             <ProductSection
               title="All Products"
               subtitle="Browse our complete collection"
-              products={products.slice(0, 40)}
+              products={filteredProducts.slice(0, 40)}
               layout="grid"
               columns={2}
             />
           </>
         )}
 
-        {!loading && products.length === 0 && (
+        {!loading && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No products found</p>
           </div>

@@ -5,6 +5,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SearchBar from '@/components/SearchBar';
+import VendorFilter from '@/components/VendorFilter';
 import emboloLogo from './embolo.png';
 import { UserCircle } from 'lucide-react';
 import {
@@ -48,7 +49,8 @@ const Header = () => {
               className="h-10 w-auto" // Adjusted for mobile view
             />
           </div>
-          <div className="flex items-center gap-1 pr-1 sm:gap-2 sm:pr-2 md:gap-2.5 md:pr-3 [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]">
+          <div className="flex items-center gap-0.5 pr-1 sm:gap-1 sm:pr-2 md:gap-1.5 md:pr-3 [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]">
+            <VendorFilter />
             <Button
               variant="ghost"
               size="lg"
