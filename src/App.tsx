@@ -9,6 +9,8 @@ import Orders from "./pages/Orders";
 import Quick from "./pages/Quick";
 import Assistance from "./pages/Assistance";
 import User from "./pages/User";
+import AboutUs from "./pages/AboutUs";
+import Updates from "./pages/Updates";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import Header from "./components/Header";
@@ -32,6 +34,8 @@ const App = () => (
               <Route path="/quick" element={<Quick />} />
               <Route path="/assistance" element={<Assistance />} />
               <Route path="/user" element={<User />} />
+              <Route path="/about" element={<AboutUs />} />
+              <Route path="/updates" element={<Updates />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

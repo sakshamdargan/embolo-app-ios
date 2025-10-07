@@ -1,4 +1,4 @@
-import { ShoppingCart, User, Menu } from 'lucide-react';
+import { ShoppingCart, User, Menu, Home, Info, Bell } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '@/store/useCartStore';
@@ -7,12 +7,31 @@ import { Badge } from '@/components/ui/badge';
 import SearchBar from '@/components/SearchBar';
 import emboloLogo from './embolo.png';
 import { UserCircle } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const Header = () => {
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { getTotalItems } = useCartStore();
   const cartItemCount = getTotalItems();
+
+  const menuItems = [
+    { icon: Home, label: 'Home', path: '/' },
+    { icon: Info, label: 'About Us', path: '/about' },
+    { icon: Bell, label: 'Updates', path: '/updates' },
+  ];
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setIsMenuOpen(false);
+  };
 
   return (
     <header id="app-header" className="fixed top-0 left-0 right-0 z-40 bg-white shadow-md">
@@ -49,13 +68,40 @@ const Header = () => {
                 {cartItemCount}
               </Badge>
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-black hover:bg-gray-100 p-2 font-semibold [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]"
-            >
-              <Menu className="!w-6 !h-6" strokeWidth={2.5} />
-            </Button>
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-black hover:bg-gray-100 p-2 font-semibold [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]"
+                >
+                  <Menu className="!w-6 !h-6" strokeWidth={2.5} />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] bg-white">
+                <SheetHeader>
+                  <SheetTitle className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
+                    Menu
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-8 space-y-2">
+                  {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.path}
+                        variant="ghost"
+                        className="w-full justify-start text-lg py-6 hover:bg-primary/10 transition-colors"
+                        onClick={() => handleNavigation(item.path)}
+                      >
+                        <Icon className="w-5 h-5 mr-3" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
         {/* Row 2: Search Bar */}
