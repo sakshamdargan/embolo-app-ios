@@ -32,7 +32,7 @@ const Header = () => {
           <div className="flex items-center gap-1 pr-1 sm:gap-2 sm:pr-2 md:gap-2.5 md:pr-3 [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]">
             <Button
               variant="ghost"
-              size="large"
+              size="lg"
               onClick={() => navigate('/user')}
               className="relative text-black hover:bg-gray-100 p-2 font-semibold [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]"
             >
