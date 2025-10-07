@@ -54,64 +54,65 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
-      <CardContent className="p-0">
-        {/* Product Image */}
-        <div className="relative aspect-square bg-muted">
+    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1 flex flex-col h-full">
+      <CardContent className="p-0 flex flex-col h-full">
+        {/* Product Image - Fixed Height */}
+        <div className="relative w-full h-48 bg-white flex-shrink-0 border-b border-border">
           <img
             src={imageUrl}
             alt={product.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain p-2"
           />
           {!inStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white font-semibold">Out of Stock</span>
+              <span className="text-white font-semibold text-xs">Out of Stock</span>
             </div>
           )}
         </div>
 
         {/* Product Info */}
-        <div className="p-3 space-y-2">
-          <h3 className="font-semibold text-sm line-clamp-2 text-foreground">
+        <div className="p-3 space-y-2 flex-1 flex flex-col">
+          <h3 className="font-semibold text-sm line-clamp-2 text-foreground h-10">
             {product.name}
           </h3>
           
-          <p className="text-xs text-muted-foreground">
-            {product.store?.name || 'Vendor'}
-          </p>
-
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-bold text-primary">
-              {price && parseFloat(price) > 0 ? `$${parseFloat(price).toFixed(2)}` : 'Price on request'}
-            </span>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              {product.store?.name || 'Vendor'}
+            </p>
             {stockQuantity && (
-              <span className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Stock: {stockQuantity}
-              </span>
+              </p>
             )}
           </div>
 
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">PTR: ₹0</span>
+            <span className="text-muted-foreground">MRP: ₹0</span>
+          </div>
+
           {/* Quantity Selector */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+          <div className="flex items-center gap-2 mt-auto">
+            <div className="flex items-center border-2 border-border rounded-md overflow-hidden">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={decrementQuantity}
                 disabled={!inStock}
-                className="h-8 w-8 p-0 rounded-none"
+                className="h-9 w-9 p-0 rounded-none hover:bg-gray-100"
               >
                 <Minus className="w-4 h-4" />
               </Button>
-              <span className="px-3 text-sm font-medium min-w-[2rem] text-center">
+              <div className="h-9 w-10 flex items-center justify-center bg-gray-50 text-sm font-semibold border-x-2 border-border">
                 {quantity}
-              </span>
+              </div>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={incrementQuantity}
                 disabled={!inStock}
-                className="h-8 w-8 p-0 rounded-none"
+                className="h-9 w-9 p-0 rounded-none hover:bg-gray-100"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -120,7 +121,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <Button
               onClick={handleAddToCart}
               disabled={!inStock}
-              className="flex-1 h-8 gap-2 bg-primary hover:bg-primary/90"
+              className="flex-1 h-9 gap-1 bg-primary hover:bg-primary/90 font-medium text-xs"
               size="sm"
             >
               <ShoppingCart className="w-4 h-4" />

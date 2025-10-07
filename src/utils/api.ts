@@ -104,7 +104,7 @@ export const api = {
 
   searchProducts: async (searchTerm: string) => {
     const response = await wooCommerceAPI.get<Product[]>('/products', {
-      params: { search: searchTerm, per_page: 50 },
+      params: { search: searchTerm, per_page: 100, status: 'publish' },
     });
     return response.data;
   },

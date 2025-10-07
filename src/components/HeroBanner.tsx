@@ -16,28 +16,29 @@ const HeroBanner = () => {
               <p className="text-primary-foreground text-sm font-semibold">🎉 Special Offers Available</p>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground leading-tight">
-              Your Health,
+              Your stock,
               <br />
               Our Priority
             </h1>
             <p className="text-primary-foreground/90 text-lg max-w-md">
-              Quality medicines delivered to your doorstep with care and convenience
+            Find the right distributor for your store. 
+            Track orders, find suppliers and restock faster! 
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex gap-2 md:gap-3">
             <Button
               onClick={() => navigate('/search')}
-              className="bg-card text-primary hover:bg-card/90 shadow-lg hover:shadow-xl transition-all"
-              size="lg"
+              className="bg-card text-primary hover:bg-card/90 shadow-lg hover:shadow-xl transition-all text-sm md:text-base px-4 md:px-6"
+              size="default"
             >
-              <ShoppingBag className="w-5 h-5 mr-2" />
+              <ShoppingBag className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" />
               Shop Now
             </Button>
             <Button
               onClick={() => navigate('/orders')}
               variant="outline"
-              className="bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary shadow-lg"
-              size="lg"
+              className="bg-transparent border-2 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary shadow-lg text-sm md:text-base px-4 md:px-6"
+              size="default"
             >
               View Orders
             </Button>

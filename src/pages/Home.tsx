@@ -104,6 +104,41 @@ const Home = () => {
 
         <Separator className="my-8" />
 
+        {/* Trending Now - Grid */}
+        <ProductSection
+          title="Trending Now"
+          subtitle="What's popular right now"
+          products={products.slice(0, 6)}
+          loading={loading}
+          layout="grid"
+          columns={2}
+        />
+
+        <Separator className="my-8" />
+
+        {/* Daily Essentials - Carousel */}
+        <ProductSection
+          title="Daily Essentials"
+          subtitle="Must-have items for everyday use"
+          products={products.slice(8, 16)}
+          loading={loading}
+          layout="carousel"
+        />
+
+        <Separator className="my-8" />
+
+        {/* Special Offers - Grid */}
+        <ProductSection
+          title="Special Offers"
+          subtitle="Limited time deals and discounts"
+          products={products.slice(16, 22)}
+          loading={loading}
+          layout="grid"
+          columns={2}
+        />
+
+        <Separator className="my-8" />
+
         {/* Category-based Sections */}
         {!loading && categories.slice(0, 3).map((category, index) => {
           const categoryProducts = getProductsByCategory(category.id);
@@ -124,7 +159,7 @@ const Home = () => {
           );
         })}
 
-        {/* New Arrivals - Last section */}
+        {/* New Arrivals - Grid */}
         {!loading && products.length > 24 && (
           <>
             <Separator className="my-8" />
@@ -132,7 +167,19 @@ const Home = () => {
               title="New Arrivals"
               subtitle="Latest additions to our collection"
               products={products.slice(24, 32)}
-              onViewAll={handleViewAll}
+              layout="carousel"
+            />
+          </>
+        )}
+
+        {/* All Products - Table View */}
+        {!loading && products.length > 32 && (
+          <>
+            <Separator className="my-8" />
+            <ProductSection
+              title="All Products"
+              subtitle="Browse our complete collection"
+              products={products.slice(0, 40)}
               layout="grid"
               columns={2}
             />
