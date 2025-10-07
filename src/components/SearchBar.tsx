@@ -54,12 +54,24 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
     try {
       setLoading(true);
       const results = await api.searchProducts(query.trim());
-      setSearchResults(results);
-      setIsOpen(true);
-    } catch (error) {
+      
+      if (results && results.length > 0) {
+        setSearchResults(results);
+        setIsOpen(true);
+      } else {
+        setSearchResults([]);
+        setIsOpen(true); // Still show dropdown with "no results" message
+      }
+    } catch (error: any) {
       console.error('Search error:', error);
-      toast.error('Search failed. Please try again.');
+      console.error('Error details:', error?.response?.data || error?.message);
+      
+      // Show user-friendly error
+      const errorMessage = error?.response?.data?.message || error?.message || 'Search failed';
+      toast.error(`Search error: ${errorMessage}`);
+      
       setSearchResults([]);
+      setIsOpen(false);
     } finally {
       setLoading(false);
     }

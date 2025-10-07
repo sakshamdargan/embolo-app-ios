@@ -103,10 +103,21 @@ export const api = {
   },
 
   searchProducts: async (searchTerm: string) => {
-    const response = await wooCommerceAPI.get<Product[]>('/products', {
-      params: { search: searchTerm, per_page: 100, status: 'publish' },
-    });
-    return response.data;
+    try {
+      const response = await wooCommerceAPI.get<Product[]>('/products', {
+        params: { 
+          search: searchTerm, 
+          per_page: 20, 
+          status: 'publish',
+          _fields: 'id,name,price,regular_price,sale_price,images,stock_quantity,stock_status,short_description,description,store'
+        },
+        timeout: 10000, // 10 second timeout
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('API Search Error:', error?.response?.status, error?.message);
+      throw error;
+    }
   },
 
   getProduct: async (id: number) => {
