@@ -114,8 +114,8 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {/* Search Input */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
+      <div className="relative rounded-[12px] overflow-hidden bg-[#dfdfdf] transition-all duration-300 shadow-none border border-transparent">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-6 h-6" />
         <Input
           type="text"
           value={value}
@@ -123,7 +123,7 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
           onKeyPress={handleKeyPress}
           onFocus={() => value.trim() && setIsOpen(true)}
           placeholder={placeholder}
-          className="pl-10 h-12 rounded-lg border-gray-300 bg-gray-100 text-gray-900 placeholder:text-gray-500"
+          className="pl-10 h-12 rounded-none bg-transparent text-gray-900 placeholder:text-gray-500 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
         />
       </div>
 
