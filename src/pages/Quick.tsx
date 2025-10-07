@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useCartStore } from '@/store/useCartStore';
 import { api, Product } from '@/utils/api';
 import { toast } from 'sonner';
-import { Plus, Trash2, ShoppingCart, Search, X } from 'lucide-react';
+import { Plus, Trash2, ShoppingCart, Search, X, Package } from 'lucide-react';
 import Fuse from 'fuse.js';
 
 interface OrderTemplate {
@@ -35,8 +35,14 @@ const Quick = () => {
 
   useEffect(() => {
     loadTemplates();
-    loadProducts();
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (isModalOpen) {
+      loadProducts();
+    }
+  }, [isModalOpen]);
 
   const loadTemplates = () => {
     try {
@@ -51,15 +57,13 @@ const Quick = () => {
   };
 
   const loadProducts = async () => {
+    if (allProducts.length > 0) return; // Already loaded
     try {
-      setLoading(true);
       const data = await api.getProducts(1, 100);
       setAllProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Failed to load products');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -159,12 +163,32 @@ const Quick = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-16">
-        <header className="gradient-primary p-6 shadow-md">
-          <h1 className="text-2xl font-bold text-primary-foreground">Cart Templates</h1>
-          <p className="text-primary-foreground/90 text-sm mt-1">Create reusable order templates</p>
-        </header>
-        <div className="container mx-auto px-4 py-6">
+      <div className="min-h-screen bg-gray-50" style={{ fontFamily: '"Roboto", sans-serif', fontWeight: 400 }}>
+        <main className="container mx-auto px-4 py-6 space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-[#00aa63] p-2 rounded-lg">
+                  <Package className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">Cart Templates</h1>
+              </div>
+              <Button
+                disabled
+                className="bg-primary hover:bg-primary/90 shadow-lg"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Template
+              </Button>
+            </div>
+
+            <div className="border-b border-gray-300 pb-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Create reusable order templates for faster checkout.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="rounded-2xl">
@@ -175,30 +199,39 @@ const Quick = () => {
               </Card>
             ))}
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pt-16">
-      <header className="gradient-primary p-6 shadow-md">
-        <div className="container mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-primary-foreground">Cart Templates</h1>
-            <p className="text-primary-foreground/90 text-sm mt-1">Create reusable order templates</p>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: '"Roboto", sans-serif', fontWeight: 400 }}>
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-[#00aa63] p-2 rounded-lg">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Cart Templates</h1>
+            </div>
+            <Button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 shadow-lg"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Template
+            </Button>
           </div>
-          <Button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-white text-primary hover:bg-white/90 shadow-lg"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Template
-          </Button>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-6">
+          <div className="border-b border-gray-300 pb-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Create reusable order templates for faster checkout.
+            </p>
+          </div>
+        </div>
+
+
         {templates.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingCart className="w-16 h-16 text-muted-foreground mx-auto mb-4" />

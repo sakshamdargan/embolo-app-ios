@@ -76,33 +76,56 @@ const Orders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="gradient-primary p-4">
-          <h1 className="text-2xl font-bold text-white">Orders</h1>
-        </header>
-        <div className="container mx-auto px-4 py-6 space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="rounded-2xl">
-              <CardContent className="p-4 space-y-3">
-                <div className="h-4 bg-muted shimmer rounded w-1/3" />
-                <div className="h-3 bg-muted shimmer rounded w-1/2" />
-                <div className="h-5 bg-muted shimmer rounded w-1/4" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="min-h-screen bg-gray-50" style={{ fontFamily: '"Roboto", sans-serif', fontWeight: 400 }}>
+        <main className="container mx-auto px-4 py-6 space-y-8">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-[#00aa63] p-2 rounded-lg">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Order History</h1>
+            </div>
+
+            <div className="border-b border-gray-300 pb-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                Review your past purchases and quickly reorder items you love.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="rounded-2xl">
+                <CardContent className="p-4 space-y-3">
+                  <div className="h-4 bg-muted shimmer rounded w-1/3" />
+                  <div className="h-3 bg-muted shimmer rounded w-1/2" />
+                  <div className="h-5 bg-muted shimmer rounded w-1/4" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="gradient-primary p-6 shadow-md">
-        <h1 className="text-2xl font-bold text-primary-foreground">Order History</h1>
-        <p className="text-primary-foreground/90 text-sm mt-1">{orders.length} total orders</p>
-      </header>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: '"Roboto", sans-serif', fontWeight: 400 }}>
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-[#00aa63] p-2 rounded-lg">
+              <Package className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Order History</h1>
+          </div>
+          <div className="border-b border-gray-300 pb-4">
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Review your past purchases and quickly reorder items you love.
+            </p>
+          </div>
+        </div>
 
-      <main className="container mx-auto px-4 py-6">
         {orders.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />

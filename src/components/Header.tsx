@@ -78,27 +78,53 @@ const Header = () => {
                   <Menu className="!w-6 !h-6" strokeWidth={2.5} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-[300px] bg-white">
-                <SheetHeader>
-                  <SheetTitle className="text-2xl font-bold gradient-primary bg-clip-text text-transparent">
-                    Menu
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-8 space-y-2">
-                  {menuItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Button
-                        key={item.path}
-                        variant="ghost"
-                        className="w-full justify-start text-lg py-6 hover:bg-primary/10 transition-colors"
-                        onClick={() => handleNavigation(item.path)}
-                      >
-                        <Icon className="w-5 h-5 mr-3" />
-                        {item.label}
-                      </Button>
-                    );
-                  })}
+              <SheetContent side="right" className="w-[320px] bg-white p-0">
+                <div className="flex flex-col h-full">
+                  {/* Logo Section */}
+                  <div className="bg-gradient-to-br from-[#00aa63] to-[#008f52] p-6 pb-8">
+                    <div className="flex items-center justify-center">
+                      <img 
+                        src={emboloLogo} 
+                        alt="Embolo" 
+                        className="h-16 w-auto filter brightness-0 invert"
+                      />
+                    </div>
+                    <p className="text-white text-center text-sm mt-3 opacity-90">
+                      Your trusted health partner
+                    </p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="flex-1 px-4 py-6 space-y-1">
+                    {menuItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Button
+                          key={item.path}
+                          variant="ghost"
+                          className="w-full justify-start text-base py-6 hover:bg-[#00aa63]/10 hover:text-[#00aa63] transition-all rounded-xl group"
+                          onClick={() => handleNavigation(item.path)}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="bg-gray-100 group-hover:bg-[#00aa63]/20 p-2 rounded-lg transition-colors">
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <span className="font-medium">{item.label}</span>
+                          </div>
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer Section */}
+                  <div className="border-t border-gray-200 p-4 bg-gray-50">
+                    <p className="text-xs text-gray-500 text-center">
+                      Version 1.0.0
+                    </p>
+                    <p className="text-xs text-gray-400 text-center mt-1">
+                      © 2025 Embolo. All rights reserved.
+                    </p>
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>
