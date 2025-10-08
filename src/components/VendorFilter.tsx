@@ -3,7 +3,8 @@ import { Store, Search, X, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { api, Store as VendorType } from '@/utils/api';
+import { api } from '@/utils/api';
+import { Vendor as VendorType } from '@/services/productService';
 import { useVendorStore } from '@/store/useVendorStore';
 import { toast } from 'sonner';
 
@@ -194,11 +195,6 @@ const VendorFilter = () => {
                           <p className="font-medium text-sm truncate">
                             {vendor.store_name || vendor.vendor_name}
                           </p>
-                          {vendor.address && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {vendor.address.city}, {vendor.address.country}
-                            </p>
-                          )}
                         </div>
                       </div>
                     );
