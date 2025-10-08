@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { api, Order } from '@/utils/api';
+import { api } from '@/utils/api';
+import { Order } from '@/services/orderService';
 import { toast } from 'sonner';
 import { Package, RotateCw } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
@@ -169,7 +170,7 @@ const Orders = () => {
                             </p>
                             <span className="text-xs text-muted-foreground">•</span>
                             <p className="text-xs font-semibold text-primary">
-                              ${parseFloat(item.total).toFixed(2)}
+                              ₹{parseFloat(item.total).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -186,7 +187,7 @@ const Orders = () => {
                     <div>
                       <span className="text-xs text-muted-foreground">Total Amount</span>
                       <p className="text-xl font-bold text-primary">
-                        ${parseFloat(order.total).toFixed(2)}
+                        ₹{parseFloat(order.total).toFixed(2)}
                       </p>
                     </div>
                     <Button

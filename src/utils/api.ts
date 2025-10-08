@@ -1,37 +1,9 @@
-import axios from 'axios';
+import productService from '../services/productService';
+import orderService, { CreateOrderData } from '../services/orderService';
+import authService from '../services/authService';
 
-// Live WooCommerce credentials
-const WC_BASE_URL = 'https://embolo.in/wp-json/wc/v3';
-const DOKAN_BASE_URL = 'https://embolo.in/wp-json/dokan/v1';
-const JWT_BASE_URL = 'https://embolo.in/wp-json/jwt-auth/v1';
-const CONSUMER_KEY = 'ck_f5bd6e9c34ae6c33b6bd7e3d4d7959a2f827cc9b';
-const CONSUMER_SECRET = 'cs_15789a6d36171155132cb8bcb36192570ef01f57';
-
-const wooCommerceAPI = axios.create({
-  baseURL: WC_BASE_URL,
-  auth: {
-    username: CONSUMER_KEY,
-    password: CONSUMER_SECRET,
-  },
-});
-
-const dokanAPI = axios.create({
-  baseURL: DOKAN_BASE_URL,
-});
-
-const jwtAPI = axios.create({
-  baseURL: JWT_BASE_URL,
-});
-
-// Helper to get auth token
-const getAuthToken = () => localStorage.getItem('auth_token');
-
-// Helper to get auth headers
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
+// Type definitions for API responses - these match the service interfaces
+// TODO: Consider migrating imports to use service types directly
 export interface Product {
   id: number;
   name: string;
@@ -41,7 +13,7 @@ export interface Product {
   images: Array<{ src: string; alt: string }>;
   stock_quantity: number | null;
   stock_status: string;
-  description: string;
+  description?: string;
   short_description: string;
   categories: Array<{ id: number; name: string }>;
   store?: {
@@ -94,87 +66,66 @@ export interface Store {
 }
 
 export const api = {
-  // Products
+  // Products - Modern JWT-based custom endpoints with server-side vendor filtering
   getProducts: async (page = 1, perPage = 20, vendorIds?: number[]) => {
-    const response = await wooCommerceAPI.get<Product[]>('/products', {
-      params: { page, per_page: perPage, status: 'publish' },
-    });
-    return response.data;
+    try {
+      const params: any = { page, per_page: perPage };
+      
+      // Add vendor filtering if specific vendors are selected
+      if (vendorIds && vendorIds.length > 0) {
+        params.vendor = vendorIds.join(',');
+      }
+      
+      const response = await productService.getProducts(params);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      return [];
+    }
   },
 
   searchProducts: async (searchTerm: string, vendorIds?: number[]) => {
     try {
-      const response = await wooCommerceAPI.get<Product[]>('/products', {
-        params: { 
-          search: searchTerm, 
-          per_page: 20, 
-          status: 'publish',
-          _fields: 'id,name,price,regular_price,sale_price,images,stock_quantity,stock_status,short_description,description,store'
-        },
-        timeout: 10000, // 10 second timeout
-      });
+      const params: any = { q: searchTerm, per_page: 20 };
+      
+      // Add vendor filtering if specific vendors are selected
+      if (vendorIds && vendorIds.length > 0) {
+        params.vendor = vendorIds.join(',');
+      }
+      
+      const response = await productService.searchProducts(params);
       return response.data;
     } catch (error: any) {
-      console.error('API Search Error:', error?.response?.status, error?.message);
+      console.error('API Search Error:', error?.message);
       throw error;
     }
   },
 
   getProduct: async (id: number) => {
-    const response = await wooCommerceAPI.get<Product>(`/products/${id}`);
-    return response.data;
+    try {
+      const response = await productService.getProduct(id);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch product:', error);
+      throw error;
+    }
   },
 
-  // Categories
+  // Categories - Modern JWT-based custom endpoints
   getCategories: async () => {
-    const response = await wooCommerceAPI.get<Category[]>('/products/categories', {
-      params: { per_page: 50 },
-    });
-    return response.data;
+    try {
+      const response = await productService.getCategories({ per_page: 50 });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      return [];
+    }
   },
 
-  // Orders
-  createOrder: async (orderData: {
-    line_items: Array<{ product_id: number; quantity: number }>;
-    billing: {
-      first_name: string;
-      last_name: string;
-      email: string;
-      phone: string;
-      address_1: string;
-      city: string;
-      postcode: string;
-      country: string;
-    };
-  }) => {
-    const response = await wooCommerceAPI.post<Order>('/orders', {
-      ...orderData,
-      payment_method: 'cod',
-      payment_method_title: 'Cash on Delivery',
-      set_paid: false,
-      status: 'pending',
-    });
-    return response.data;
-  },
-
-  getOrders: async (customerId?: number) => {
-    const response = await wooCommerceAPI.get<Order[]>('/orders', {
-      params: customerId ? { customer: customerId } : {},
-    });
-    return response.data;
-  },
-
-  getOrder: async (id: number) => {
-    const response = await wooCommerceAPI.get<Order>(`/orders/${id}`);
-    return response.data;
-  },
-
-  // Dokan - Stores/Vendors
+  // Stores/Vendors - Modern JWT-based custom endpoints
   getStores: async () => {
     try {
-      const response = await dokanAPI.get<Store[]>('/stores', {
-        params: { per_page: 50 },
-      });
+      const response = await productService.getVendors({ per_page: 50 });
       return response.data;
     } catch (error) {
       console.error('Error fetching stores:', error);
@@ -183,51 +134,108 @@ export const api = {
   },
 
   getStoreProducts: async (storeId: number) => {
-    const response = await wooCommerceAPI.get<Product[]>('/products', {
-      params: { vendor: storeId, per_page: 50 },
-    });
-    return response.data;
-  },
-
-  // Authentication
-  login: async (username: string, password: string) => {
-    const response = await jwtAPI.post('/token', { username, password });
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-      localStorage.setItem('user_email', response.data.user_email);
-      localStorage.setItem('user_id', response.data.user_id);
+    try {
+      const response = await productService.getProducts({ vendor: storeId, per_page: 50 });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch store products:', error);
+      return [];
     }
-    return response.data;
   },
 
-  register: async (email: string, password: string, firstName?: string, lastName?: string) => {
-    const response = await wooCommerceAPI.post('/customers', {
-      email,
-      password,
-      first_name: firstName || '',
-      last_name: lastName || '',
-      username: email,
-    });
-    return response.data;
+  // Orders - Modern JWT-based custom endpoints
+  createOrder: async (orderData: CreateOrderData) => {
+    try {
+      const response = await orderService.createOrder(orderData);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to create order:', error);
+      throw error;
+    }
+  },
+
+  getOrders: async (customerId?: number) => {
+    try {
+      const response = await orderService.getOrders();
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch orders:', error);
+      return [];
+    }
+  },
+
+  getOrder: async (id: number) => {
+    try {
+      const response = await orderService.getOrder(id);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch order:', error);
+      throw error;
+    }
+  },
+
+
+  // Authentication - Modern JWT-based custom auth service
+  login: async (username: string, otp: string) => {
+    try {
+      const response = await authService.login(username, otp);
+      return response;
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
+  },
+
+  register: async (registrationData: any) => {
+    try {
+      const response = await authService.register(registrationData);
+      return response;
+    } catch (error) {
+      console.error('Registration failed:', error);
+      throw error;
+    }
   },
 
   logout: () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_email');
-    localStorage.removeItem('user_id');
+    authService.logout();
   },
 
   getCurrentUser: async () => {
-    const userId = localStorage.getItem('user_id');
-    if (!userId) return null;
-    
-    const response = await wooCommerceAPI.get(`/customers/${userId}`, {
-      headers: getAuthHeaders(),
-    });
-    return response.data;
+    return authService.getCurrentUser();
   },
 
   isAuthenticated: () => {
-    return !!getAuthToken();
+    return authService.isAuthenticated();
+  },
+
+  // Enhanced functionality using modern JWT-based endpoints
+  getFeaturedProducts: async () => {
+    try {
+      const response = await productService.getFeaturedProducts(10);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch featured products:', error);
+      return [];
+    }
+  },
+
+  getProductsByCategory: async (categoryId: number, page = 1, perPage = 20) => {
+    try {
+      const response = await productService.getProductsByCategory(categoryId, { page, per_page: perPage });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch products by category:', error);
+      return [];
+    }
+  },
+
+  requestOTP: async (username: string) => {
+    try {
+      const response = await authService.requestLoginOTP(username);
+      return response;
+    } catch (error) {
+      console.error('Failed to request OTP:', error);
+      throw error;
+    }
   },
 };

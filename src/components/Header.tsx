@@ -11,6 +11,7 @@ import { UserCircle } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -81,6 +82,12 @@ const Header = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[320px] bg-white p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation Menu</SheetTitle>
+                  <SheetDescription>
+                    Navigate through different sections of the Embolo app
+                  </SheetDescription>
+                </SheetHeader>
                 <div className="flex flex-col h-full">
                   {/* Logo Section */}
                   <div className="bg-gradient-to-br from-[#00aa63] to-[#008f52] p-6 pb-8">

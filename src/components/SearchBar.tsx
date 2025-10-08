@@ -18,6 +18,7 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
   const [isOpen, setIsOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [quantityErrors, setQuantityErrors] = useState<Record<number, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
@@ -55,18 +56,12 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
 
     try {
       setLoading(true);
-      const results = await api.searchProducts(query.trim(), selectedVendorIds);
+      const vendorIds = allVendorsSelected ? undefined : selectedVendorIds;
+      const results = await api.searchProducts(query.trim(), vendorIds);
       
-      // Filter results by selected vendors if not all vendors selected
-      let filteredResults = results;
-      if (!allVendorsSelected && selectedVendorIds.length > 0) {
-        filteredResults = results.filter(product => 
-          product.store && selectedVendorIds.includes(product.store.id)
-        );
-      }
-      
-      if (filteredResults && filteredResults.length > 0) {
-        setSearchResults(filteredResults);
+      // Server-side filtering is already applied, no need for client-side filtering
+      if (results && results.length > 0) {
+        setSearchResults(results);
         setIsOpen(true);
       } else {
         setSearchResults([]);
@@ -129,7 +124,7 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
       quantity: 1,
       image: imageUrl,
       stock_quantity: stockQuantity,
-      vendorName: product.store?.name || 'Unknown Vendor',
+      vendorName: product.store?.name || 'Embolo',
     });
 
     toast.success(`Added ${product.name} to cart`);
@@ -201,11 +196,16 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                         {product.name}
                       </h4>
                       <p className="text-xs text-muted-foreground mb-1">
-                        {product.store?.name || 'Vendor'}
+                        {product.store?.name || 'Unknown Vendor'}
                       </p>
+                      {product.stock_quantity && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Stock: {product.stock_quantity}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between text-xs gap-4">
-                        <span className="text-muted-foreground">PTR: ₹0</span>
-                        <span className="text-muted-foreground">MRP: ₹0</span>
+                        <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
+                        <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
                       </div>
                     </div>
 
@@ -216,27 +216,82 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
-                            const el = (e.currentTarget.nextSibling as HTMLElement);
-                            const current = Number(el?.dataset.qty || '1');
+                            const input = (e.currentTarget.nextSibling as HTMLInputElement);
+                            const current = Number(input?.value || '1');
                             const next = Math.max(1, current - 1);
-                            if (el) el.dataset.qty = String(next);
-                            if (el) el.innerText = String(next);
+                            if (input) input.value = String(next);
                           }}
                           className="h-9 w-9 text-sm hover:bg-gray-100"
                           aria-label="Decrease quantity"
                         >
                           −
                         </button>
-                        <span data-qty="1" className="px-3 min-w-[2.5rem] text-center text-sm font-semibold border-x-2 border-border h-9 flex items-center justify-center">1</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={product.stock_quantity || 999}
+                          defaultValue="1"
+                          className="px-2 min-w-[3rem] text-center text-sm font-semibold border-x-2 border-border h-9 bg-transparent focus:outline-none"
+                          onFocus={(e) => {
+                            e.target.select();
+                          }}
+                          onBlur={(e) => {
+                            if (!e.target.value || e.target.value === '' || parseInt(e.target.value) < 1) {
+                              e.target.value = '1';
+                            }
+                          }}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 1;
+                            const maxStock = product.stock_quantity || 999;
+                            if (value > maxStock) {
+                              e.target.value = String(maxStock);
+                              setQuantityErrors(prev => ({
+                                ...prev,
+                                [product.id]: `Maximum available: ${maxStock}`
+                              }));
+                              // Clear error after 3 seconds
+                              setTimeout(() => {
+                                setQuantityErrors(prev => {
+                                  const newErrors = { ...prev };
+                                  delete newErrors[product.id];
+                                  return newErrors;
+                                });
+                              }, 3000);
+                            } else if (value < 1) {
+                              e.target.value = '1';
+                            } else {
+                              // Clear any existing error for this product
+                              setQuantityErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors[product.id];
+                                return newErrors;
+                              });
+                            }
+                          }}
+                        />
                         <button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
-                            const el = (e.currentTarget.previousSibling as HTMLElement);
-                            const current = Number(el?.dataset.qty || '1');
-                            const next = current + 1;
-                            if (el) el.dataset.qty = String(next);
-                            if (el) el.innerText = String(next);
+                            const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                            const current = Number(input?.value || '1');
+                            const maxStock = product.stock_quantity || 999;
+                            const next = Math.min(maxStock, current + 1);
+                            if (input) input.value = String(next);
+                            if (next === maxStock && current < maxStock) {
+                              setQuantityErrors(prev => ({
+                                ...prev,
+                                [product.id]: `Maximum available: ${maxStock}`
+                              }));
+                              // Clear error after 3 seconds
+                              setTimeout(() => {
+                                setQuantityErrors(prev => {
+                                  const newErrors = { ...prev };
+                                  delete newErrors[product.id];
+                                  return newErrors;
+                                });
+                              }, 3000);
+                            }
                           }}
                           className="h-9 w-9 text-sm hover:bg-gray-100"
                           aria-label="Increase quantity"
@@ -247,9 +302,9 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                       <Button
                         size="sm"
                         onClick={(e) => {
-                          const qtyEl = (e.currentTarget.previousSibling as HTMLElement)?.querySelector('[data-qty]') as HTMLElement | null;
-                          const qtyVal = qtyEl ? Number(qtyEl.dataset.qty || '1') : 1;
-                          // Temporarily call handleAddToCart multiple times to respect qty
+                          const input = (e.currentTarget.previousSibling as HTMLElement)?.querySelector('input') as HTMLInputElement | null;
+                          const qtyVal = input ? Number(input.value || '1') : 1;
+                          // Add to cart with specified quantity
                           for (let i = 0; i < Math.max(1, qtyVal); i++) handleAddToCart(product);
                         }}
                         disabled={!inStock}
@@ -259,6 +314,12 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                         Add to Cart
                       </Button>
                     </div>
+                    {/* Inline quantity error message */}
+                    {quantityErrors[product.id] && (
+                      <div className="text-xs text-red-500 mt-1 px-1">
+                        {quantityErrors[product.id]}
+                      </div>
+                    )}
                   </div>
                 );
               })}
