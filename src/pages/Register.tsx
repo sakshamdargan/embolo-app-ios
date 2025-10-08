@@ -28,7 +28,12 @@ const Register: React.FC = () => {
     shop_name: '',
     owner_first_name: '',
     owner_last_name: '',
-    business_type: 'chemist'
+    business_type: 'chemist',
+    address: '',
+    city: '',
+    state: '',
+    postcode: '',
+    country: 'IN'
   });
   const [licenseData, setLicenseData] = useState<LicenseData>({
     has_license_20: false,
@@ -118,13 +123,13 @@ const Register: React.FC = () => {
       case 1:
         return !!(formData.phone && formData.email && formData.otp && otpSent);
       case 2:
-        return !!formData.business_type;
-      case 3:
         const basicValid = !!(formData.shop_name && formData.owner_first_name && formData.owner_last_name);
         const licenseValid = licenseData.has_license_20 || licenseData.has_license_21;
         const license20Valid = !licenseData.has_license_20 || (licenseData.license_20_number && licenseData.license_20_expiry);
         const license21Valid = !licenseData.has_license_21 || (licenseData.license_21_number && licenseData.license_21_expiry);
         return basicValid && licenseValid && license20Valid && license21Valid;
+      case 3:
+        return !!(formData.address && formData.city && formData.state && formData.postcode);
       default:
         return false;
     }
@@ -287,64 +292,6 @@ const Register: React.FC = () => {
   const renderStep2 = () => (
     <div className="space-y-4">
       <div className="text-center mb-6">
-        <h3 className="text-lg font-semibold">Business Type</h3>
-        <p className="text-sm text-gray-600">Select your business type</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div
-          className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-            formData.business_type === 'distributor'
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-          onClick={() => setFormData(prev => ({ ...prev, business_type: 'distributor' }))}
-        >
-          <div className="text-center">
-            <Truck className="w-12 h-12 mx-auto mb-3 text-blue-600" />
-            <h4 className="font-semibold">Distributor</h4>
-          </div>
-        </div>
-
-        <div
-          className={`p-6 border-2 rounded-lg cursor-pointer transition-all ${
-            formData.business_type === 'chemist'
-              ? 'border-green-500 bg-green-50'
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-          onClick={() => setFormData(prev => ({ ...prev, business_type: 'chemist' }))}
-        >
-          <div className="text-center">
-            <Pill className="w-12 h-12 mx-auto mb-3 text-green-600" />
-            <h4 className="font-semibold">Chemist</h4>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          className="flex-1"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
-        </Button>
-        <Button
-          type="button"
-          onClick={handleNext}
-          disabled={!validateStep(2)}
-          className="flex-1"
-        >
-          Continue <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
-    </div>
-  );
-
-  const renderStep3 = () => (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
         <h3 className="text-lg font-semibold">Business Information</h3>
         <p className="text-sm text-gray-600">Complete your business details</p>
       </div>
@@ -475,6 +422,111 @@ const Register: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          className="flex-1"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        </Button>
+        <Button
+          type="button"
+          onClick={handleNext}
+          disabled={!validateStep(2)}
+          className="flex-1"
+        >
+          Continue <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderStep3 = () => (
+    <div className="space-y-4">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold">Shop Address</h3>
+        <p className="text-sm text-gray-600">Enter your shop address details</p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="address">Shop Address *</Label>
+        <Input
+          id="address"
+          name="address"
+          type="text"
+          placeholder="Enter your shop address"
+          value={formData.address}
+          onChange={handleInputChange}
+          disabled={loading}
+        />
+        <p className="text-xs text-gray-500">
+          Enter your complete shop address including building name, street, area
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="city">City *</Label>
+          <Input
+            id="city"
+            name="city"
+            type="text"
+            placeholder="City"
+            value={formData.city}
+            onChange={handleInputChange}
+            disabled={loading}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="state">State *</Label>
+          <Input
+            id="state"
+            name="state"
+            type="text"
+            placeholder="State"
+            value={formData.state}
+            onChange={handleInputChange}
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="postcode">PIN Code *</Label>
+          <Input
+            id="postcode"
+            name="postcode"
+            type="text"
+            placeholder="PIN Code"
+            value={formData.postcode}
+            onChange={handleInputChange}
+            disabled={loading}
+            maxLength={6}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="country">Country</Label>
+          <Input
+            id="country"
+            name="country"
+            type="text"
+            value="India"
+            disabled
+            className="bg-gray-50"
+          />
+        </div>
+      </div>
+
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-800">
+          <strong>Note:</strong> This address will be used for delivery and business verification purposes.
+          Please ensure all details are accurate.
+        </p>
       </div>
 
       <div className="flex gap-2">

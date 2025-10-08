@@ -1,53 +1,23 @@
-import { useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/store/useCartStore';
-import { api } from '@/utils/api';
 import { toast } from 'sonner';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
-  const [loading, setLoading] = useState(false);
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (items.length === 0) {
       toast.error('Your cart is empty');
       return;
     }
 
-    try {
-      setLoading(true);
-      
-      // Create order with COD payment
-      const orderData = {
-        line_items: items.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity,
-        })),
-        billing: {
-          first_name: 'Customer',
-          last_name: 'Name',
-          email: 'customer@example.com',
-          phone: '1234567890',
-          address_1: 'Address Line 1',
-          city: 'City',
-          state: 'State',
-          postcode: '12345',
-          country: 'IN',
-        },
-      };
-
-      await api.createOrder(orderData);
-      
-      clearCart();
-      toast.success('Order placed successfully! Payment pending.');
-    } catch (error) {
-      console.error('Error creating order:', error);
-      toast.error('Failed to place order. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    // Navigate to checkout page
+    navigate('/checkout');
   };
 
   if (items.length === 0) {
@@ -185,18 +155,10 @@ const Cart = () => {
           <div className="max-w-4xl mx-auto">
             <Button
               onClick={handleCheckout}
-              disabled={loading}
               className="w-full h-14 bg-primary hover:bg-primary/90 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all rounded-xl"
               size="lg"
             >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processing...
-                </div>
-              ) : (
-                `Proceed to Checkout - ₹${getTotalPrice().toFixed(2)}`
-              )}
+              Proceed to Checkout - ₹{getTotalPrice().toFixed(2)}
             </Button>
           </div>
         </div>

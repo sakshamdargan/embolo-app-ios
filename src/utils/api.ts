@@ -238,4 +238,14 @@ export const api = {
       throw error;
     }
   },
+
+  getUserProfile: async () => {
+    try {
+      const response = await authService.getUserProfile();
+      return response;
+    } catch (error) {
+      console.error('Failed to get user profile:', error);
+      throw error;
+    }
+  },
 };

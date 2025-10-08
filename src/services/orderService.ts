@@ -103,6 +103,13 @@ export interface CreateOrderData {
   }>;
   billing: OrderAddress;
   shipping?: OrderAddress;
+  payment_method?: string;
+  payment_method_title?: string;
+  status?: string;
+  meta_data?: Array<{
+    key: string;
+    value: string;
+  }>;
 }
 
 export interface PaginationInfo {

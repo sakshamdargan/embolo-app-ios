@@ -71,6 +71,13 @@ class Chemist_Auth_Controller {
             'callback'            => [$this, 'refresh_token'],
             'permission_callback' => '__return_true',
         ]);
+
+        // Get User Profile
+        register_rest_route(self::NAMESPACE, '/auth/profile', [
+            'methods'             => \WP_REST_Server::READABLE,
+            'callback'            => [$this, 'get_profile'],
+            'permission_callback' => [$this, 'check_jwt_auth'],
+        ]);
     }
 
     public function request_login_otp(\WP_REST_Request $request) {
@@ -210,6 +217,7 @@ class Chemist_Auth_Controller {
                     'id' => $user->ID,
                     'email' => $user->user_email,
                     'name' => $user->display_name,
+                    'phone' => get_user_meta($user->ID, 'billing_phone', true),
                     'business_type' => get_user_meta($user->ID, 'business_type', true),
                     'shop_name' => get_user_meta($user->ID, 'shop_name', true)
                 ]
@@ -285,6 +293,7 @@ class Chemist_Auth_Controller {
                     'id' => $user->ID,
                     'email' => $user->user_email,
                     'name' => $user->display_name,
+                    'phone' => $phone,
                     'business_type' => $business_type,
                     'shop_name' => $shop_name
                 ],
@@ -339,6 +348,45 @@ class Chemist_Auth_Controller {
             return trim(substr($header, 7));
         }
         return null;
+    }
+
+    public function get_profile(\WP_REST_Request $request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new \WP_Error('not_authenticated', 'User not authenticated', ['status' => 401]);
+        }
+
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return new \WP_Error('user_not_found', 'User not found', ['status' => 404]);
+        }
+
+        return rest_ensure_response([
+            'success' => true,
+            'user' => [
+                'id' => $user->ID,
+                'email' => $user->user_email,
+                'name' => $user->display_name,
+                'phone' => get_user_meta($user->ID, 'billing_phone', true),
+                'business_type' => get_user_meta($user->ID, 'business_type', true),
+                'shop_name' => get_user_meta($user->ID, 'shop_name', true),
+                'address' => get_user_meta($user->ID, 'billing_address_1', true),
+                'city' => get_user_meta($user->ID, 'billing_city', true),
+                'state' => get_user_meta($user->ID, 'billing_state', true),
+                'postcode' => get_user_meta($user->ID, 'billing_postcode', true),
+                'country' => get_user_meta($user->ID, 'billing_country', true)
+            ]
+        ]);
+    }
+
+    public function check_jwt_auth(\WP_REST_Request $request) {
+        $token = $this->get_token_from_request($request);
+        if (!$token) {
+            return false;
+        }
+        
+        $payload = Token_Service::validate_token($token);
+        return $payload !== false;
     }
 
     private function get_user_by_phone($phone) {

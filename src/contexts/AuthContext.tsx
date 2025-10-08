@@ -44,7 +44,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Validate token with server
         const isValid = await authService.validateToken();
         if (isValid) {
-          setUser(savedUser);
+          // Try to fetch complete user profile from server
+          try {
+            const completeUser = await authService.getUserProfile();
+            setUser(completeUser || savedUser);
+          } catch (error) {
+            // If profile fetch fails, use cached user data
+            console.warn('Failed to fetch complete user profile, using cached data:', error);
+            setUser(savedUser);
+          }
         } else {
           // Token invalid, clear storage
           authService.logout();

@@ -43,6 +43,7 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  phone: string;
   business_type: string;
   shop_name: string;
 }
@@ -171,17 +172,33 @@ class AuthService {
     localStorage.removeItem('eco_swift_user');
   }
 
-  // Get current user
   getCurrentUser(): User | null {
     try {
       const userStr = localStorage.getItem('eco_swift_user');
       return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
+      console.error('Error parsing user data:', error);
       return null;
     }
   }
 
-  // Check if user is authenticated
+  // Get user profile with complete data from server
+  async getUserProfile(): Promise<User | null> {
+    try {
+      const response = await authAPI.get('/auth/profile');
+      if (response.data.success) {
+        const userData = response.data.user;
+        // Update localStorage with complete user data
+        localStorage.setItem('eco_swift_user', JSON.stringify(userData));
+        return userData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return this.getCurrentUser(); // Fallback to cached data
+    }
+  }
+
   isAuthenticated(): boolean {
     return !!localStorage.getItem('eco_swift_token');
   }
