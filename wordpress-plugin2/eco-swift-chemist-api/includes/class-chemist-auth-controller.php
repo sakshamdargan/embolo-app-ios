@@ -113,7 +113,7 @@ class Chemist_Auth_Controller {
             
             // Send OTP
             if ($method === 'email') {
-                $subject = 'Your Eco Swift Login Code';
+                $subject = 'Your Embolo Login Code';
                 $message = "Your login verification code is: $otp\nValid for 5 minutes";
                 wp_mail($username, $subject, $message);
             } else {

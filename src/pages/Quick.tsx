@@ -28,6 +28,7 @@ const Quick = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [quantityErrors, setQuantityErrors] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchTimeoutRef, setSearchTimeoutRef] = useState<NodeJS.Timeout | null>(null);
@@ -425,9 +426,27 @@ const Quick = () => {
                                   const maxStock = product.stock_quantity || 999;
                                   if (value > maxStock) {
                                     e.target.value = String(maxStock);
-                                    toast.error(`Maximum available quantity is ${maxStock}`);
+                                    setQuantityErrors(prev => ({
+                                      ...prev,
+                                      [product.id]: `Maximum available: ${maxStock}`
+                                    }));
+                                    // Clear error after 3 seconds
+                                    setTimeout(() => {
+                                      setQuantityErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        delete newErrors[product.id];
+                                        return newErrors;
+                                      });
+                                    }, 3000);
                                   } else if (value < 1) {
                                     e.target.value = '1';
+                                  } else {
+                                    // Clear any existing error for this product
+                                    setQuantityErrors(prev => {
+                                      const newErrors = { ...prev };
+                                      delete newErrors[product.id];
+                                      return newErrors;
+                                    });
                                   }
                                 }}
                               />
@@ -441,7 +460,18 @@ const Quick = () => {
                                   const next = Math.min(maxStock, current + 1);
                                   if (input) input.value = String(next);
                                   if (next === maxStock && current < maxStock) {
-                                    toast.error(`Maximum available quantity is ${maxStock}`);
+                                    setQuantityErrors(prev => ({
+                                      ...prev,
+                                      [product.id]: `Maximum available: ${maxStock}`
+                                    }));
+                                    // Clear error after 3 seconds
+                                    setTimeout(() => {
+                                      setQuantityErrors(prev => {
+                                        const newErrors = { ...prev };
+                                        delete newErrors[product.id];
+                                        return newErrors;
+                                      });
+                                    }, 3000);
                                   }
                                 }}
                                 className="h-8 w-8 text-sm hover:bg-gray-100"
@@ -464,6 +494,12 @@ const Quick = () => {
                               <Plus className="w-4 h-4" />
                             </Button>
                           </div>
+                          {/* Inline quantity error message */}
+                          {quantityErrors[product.id] && (
+                            <div className="text-xs text-red-500 mt-1 px-1">
+                              {quantityErrors[product.id]}
+                            </div>
+                          )}
                         </div>
                       );
                     })

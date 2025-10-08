@@ -18,6 +18,7 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
   const [isOpen, setIsOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [quantityErrors, setQuantityErrors] = useState<Record<number, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
@@ -197,6 +198,11 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                       <p className="text-xs text-muted-foreground mb-1">
                         {product.store?.name || 'Unknown Vendor'}
                       </p>
+                      {product.stock_quantity && (
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Stock: {product.stock_quantity}
+                        </p>
+                      )}
                       <div className="flex items-center justify-between text-xs gap-4">
                         <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
                         <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
@@ -226,14 +232,40 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                           max={product.stock_quantity || 999}
                           defaultValue="1"
                           className="px-2 min-w-[3rem] text-center text-sm font-semibold border-x-2 border-border h-9 bg-transparent focus:outline-none"
+                          onFocus={(e) => {
+                            e.target.select();
+                          }}
+                          onBlur={(e) => {
+                            if (!e.target.value || e.target.value === '' || parseInt(e.target.value) < 1) {
+                              e.target.value = '1';
+                            }
+                          }}
                           onChange={(e) => {
                             const value = parseInt(e.target.value) || 1;
                             const maxStock = product.stock_quantity || 999;
                             if (value > maxStock) {
                               e.target.value = String(maxStock);
-                              toast.error(`Maximum available quantity is ${maxStock}`);
+                              setQuantityErrors(prev => ({
+                                ...prev,
+                                [product.id]: `Maximum available: ${maxStock}`
+                              }));
+                              // Clear error after 3 seconds
+                              setTimeout(() => {
+                                setQuantityErrors(prev => {
+                                  const newErrors = { ...prev };
+                                  delete newErrors[product.id];
+                                  return newErrors;
+                                });
+                              }, 3000);
                             } else if (value < 1) {
                               e.target.value = '1';
+                            } else {
+                              // Clear any existing error for this product
+                              setQuantityErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors[product.id];
+                                return newErrors;
+                              });
                             }
                           }}
                         />
@@ -247,7 +279,18 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                             const next = Math.min(maxStock, current + 1);
                             if (input) input.value = String(next);
                             if (next === maxStock && current < maxStock) {
-                              toast.error(`Maximum available quantity is ${maxStock}`);
+                              setQuantityErrors(prev => ({
+                                ...prev,
+                                [product.id]: `Maximum available: ${maxStock}`
+                              }));
+                              // Clear error after 3 seconds
+                              setTimeout(() => {
+                                setQuantityErrors(prev => {
+                                  const newErrors = { ...prev };
+                                  delete newErrors[product.id];
+                                  return newErrors;
+                                });
+                              }, 3000);
                             }
                           }}
                           className="h-9 w-9 text-sm hover:bg-gray-100"
@@ -271,6 +314,12 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                         Add to Cart
                       </Button>
                     </div>
+                    {/* Inline quantity error message */}
+                    {quantityErrors[product.id] && (
+                      <div className="text-xs text-red-500 mt-1 px-1">
+                        {quantityErrors[product.id]}
+                      </div>
+                    )}
                   </div>
                 );
               })}

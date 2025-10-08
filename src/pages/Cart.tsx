@@ -32,8 +32,9 @@ const Cart = () => {
           phone: '1234567890',
           address_1: 'Address Line 1',
           city: 'City',
+          state: 'State',
           postcode: '12345',
-          country: 'US',
+          country: 'IN',
         },
       };
 
@@ -111,9 +112,9 @@ const Cart = () => {
                           <p className="text-xs text-muted-foreground">Sold by: {item.vendorName}</p>
                         )}
                         <p className="text-lg font-bold text-primary">
-                          ${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                          ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
                           <span className="text-sm text-muted-foreground font-normal ml-2">
-                            (${parseFloat(item.price).toFixed(2)} each)
+                            (₹{parseFloat(item.price).toFixed(2)} each)
                           </span>
                         </p>
 
@@ -163,7 +164,7 @@ const Cart = () => {
           <div className="flex items-center justify-between gap-4 mt-6 p-4 bg-gray-50 rounded-lg border border-gray-300">
             <div>
               <p className="text-sm text-muted-foreground">Total Amount</p>
-              <p className="text-2xl font-bold text-primary">${getTotalPrice().toFixed(2)}</p>
+              <p className="text-2xl font-bold text-primary">₹{getTotalPrice().toFixed(2)}</p>
             </div>
             
             <Button
@@ -194,7 +195,7 @@ const Cart = () => {
                   Processing...
                 </div>
               ) : (
-                `Proceed to Checkout - $${getTotalPrice().toFixed(2)}`
+                `Proceed to Checkout - ₹${getTotalPrice().toFixed(2)}`
               )}
             </Button>
           </div>

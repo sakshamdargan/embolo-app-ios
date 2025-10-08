@@ -1,40 +1,9 @@
-import axios from 'axios';
-import productService, { Product as NewProduct, Category as NewCategory } from '../services/productService';
-import orderService, { Order as NewOrder, CreateOrderData } from '../services/orderService';
+import productService from '../services/productService';
+import orderService, { CreateOrderData } from '../services/orderService';
 import authService from '../services/authService';
 
-// Legacy WooCommerce credentials (kept for backward compatibility)
-const WC_BASE_URL = 'https://embolo.in/wp-json/wc/v3';
-const DOKAN_BASE_URL = 'https://embolo.in/wp-json/dokan/v1';
-const JWT_BASE_URL = 'https://embolo.in/wp-json/jwt-auth/v1';
-const CONSUMER_KEY = 'ck_f5bd6e9c34ae6c33b6bd7e3d4d7959a2f827cc9b';
-const CONSUMER_SECRET = 'cs_15789a6d36171155132cb8bcb36192570ef01f57';
-
-const wooCommerceAPI = axios.create({
-  baseURL: WC_BASE_URL,
-  auth: {
-    username: CONSUMER_KEY,
-    password: CONSUMER_SECRET,
-  },
-});
-
-const dokanAPI = axios.create({
-  baseURL: DOKAN_BASE_URL,
-});
-
-const jwtAPI = axios.create({
-  baseURL: JWT_BASE_URL,
-});
-
-// Helper to get auth token
-const getAuthToken = () => localStorage.getItem('auth_token');
-
-// Helper to get auth headers
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
+// Type definitions for API responses - these match the service interfaces
+// TODO: Consider migrating imports to use service types directly
 export interface Product {
   id: number;
   name: string;
@@ -44,7 +13,7 @@ export interface Product {
   images: Array<{ src: string; alt: string }>;
   stock_quantity: number | null;
   stock_status: string;
-  description?: string; // Make optional to match productService
+  description?: string;
   short_description: string;
   categories: Array<{ id: number; name: string }>;
   store?: {
@@ -97,7 +66,7 @@ export interface Store {
 }
 
 export const api = {
-  // Products - Updated to use custom endpoints with server-side vendor filtering
+  // Products - Modern JWT-based custom endpoints with server-side vendor filtering
   getProducts: async (page = 1, perPage = 20, vendorIds?: number[]) => {
     try {
       const params: any = { page, per_page: perPage };
@@ -142,7 +111,7 @@ export const api = {
     }
   },
 
-  // Categories - Updated to use custom endpoints
+  // Categories - Modern JWT-based custom endpoints
   getCategories: async () => {
     try {
       const response = await productService.getCategories({ per_page: 50 });
@@ -153,7 +122,7 @@ export const api = {
     }
   },
 
-  // Stores/Vendors - Custom endpoint
+  // Stores/Vendors - Modern JWT-based custom endpoints
   getStores: async () => {
     try {
       const response = await productService.getVendors({ per_page: 50 });
@@ -174,7 +143,7 @@ export const api = {
     }
   },
 
-  // Orders - Updated to use custom endpoints
+  // Orders - Modern JWT-based custom endpoints
   createOrder: async (orderData: CreateOrderData) => {
     try {
       const response = await orderService.createOrder(orderData);
@@ -206,7 +175,7 @@ export const api = {
   },
 
 
-  // Authentication - Updated to use custom auth service
+  // Authentication - Modern JWT-based custom auth service
   login: async (username: string, otp: string) => {
     try {
       const response = await authService.login(username, otp);
@@ -239,7 +208,7 @@ export const api = {
     return authService.isAuthenticated();
   },
 
-  // New methods for enhanced functionality
+  // Enhanced functionality using modern JWT-based endpoints
   getFeaturedProducts: async () => {
     try {
       const response = await productService.getFeaturedProducts(10);

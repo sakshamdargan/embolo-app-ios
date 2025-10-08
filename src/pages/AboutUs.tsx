@@ -1,4 +1,4 @@
-import { Building2, Zap, Clock, Package, Smartphone, DollarSign, Target, Users, TrendingUp, Shield, Heart, Award } from 'lucide-react';
+import { Building2, Zap, Clock, Package, Smartphone, Wallet, Target, Users, TrendingUp, Shield, Heart, Award } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import emboloLogo from '@/components/embolo.png';
 
@@ -30,7 +30,7 @@ const AboutUs = () => {
       description: "Manage billing, orders, delivery, and staff in a single app instead of multiple software."
     },
     {
-      icon: DollarSign,
+      icon: Wallet,
       title: "Cost Efficient",
       description: "Reduce workforce dependency and cut costs compared to traditional processes."
     }
