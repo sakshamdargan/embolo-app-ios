@@ -7,7 +7,6 @@ import { useCartStore } from '@/store/useCartStore';
 import { api, Product } from '@/utils/api';
 import { toast } from 'sonner';
 import { Plus, Trash2, ShoppingCart, Search, X, Package } from 'lucide-react';
-import Fuse from 'fuse.js';
 
 interface OrderTemplate {
   id: string;
@@ -27,10 +26,11 @@ const Quick = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchTimeoutRef, setSearchTimeoutRef] = useState<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
 
   useEffect(() => {
@@ -38,9 +38,12 @@ const Quick = () => {
     setLoading(false);
   }, []);
 
+  // Clear search when modal closes
   useEffect(() => {
-    if (isModalOpen) {
-      loadProducts();
+    if (!isModalOpen) {
+      setSearchQuery('');
+      setSearchResults([]);
+      setSelectedProducts([]);
     }
   }, [isModalOpen]);
 
@@ -56,33 +59,50 @@ const Quick = () => {
     }
   };
 
-  const loadProducts = async () => {
-    if (allProducts.length > 0) return; // Already loaded
+  // Server-side search function (like SearchBar component)
+  const performServerSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
     try {
-      const data = await api.getProducts(1, 100);
-      setAllProducts(data);
-    } catch (error) {
-      console.error('Error loading products:', error);
-      toast.error('Failed to load products');
+      setSearchLoading(true);
+      const results = await api.searchProducts(query.trim());
+      setSearchResults(results.slice(0, 20)); // Limit to 20 results
+    } catch (error: any) {
+      console.error('Search error:', error);
+      toast.error('Search failed. Please try again.');
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     
+    // Clear previous timeout
+    if (searchTimeoutRef) {
+      clearTimeout(searchTimeoutRef);
+    }
+
     if (!query.trim()) {
       setSearchResults([]);
+      setSearchLoading(false);
       return;
     }
 
-    const fuse = new Fuse(allProducts, {
-      keys: ['name', 'short_description'],
-      threshold: 0.3,
-      distance: 200,
-    });
-
-    const results = fuse.search(query);
-    setSearchResults(results.map((result) => result.item).slice(0, 10));
+    // Show loading state immediately
+    setSearchLoading(true);
+    
+    // Debounce: wait 400ms after user stops typing before searching
+    const timeout = setTimeout(() => {
+      performServerSearch(query);
+    }, 400);
+    
+    setSearchTimeoutRef(timeout);
   };
 
   const handleAddProductToTemplate = (product: Product) => {
@@ -274,12 +294,16 @@ const Quick = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{product.name}</p>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            Store Name Here
+                          </p>
                           <p className="text-xs text-primary">
                             {product.price && parseFloat(product.price) > 0 
-                              ? `$${parseFloat(product.price).toFixed(2)}` 
+                              ? `₹${parseFloat(product.price).toFixed(2)}` 
                               : 'Price on request'}
                           </p>
                         </div>
+                        <span className="text-xs text-muted-foreground">Qty: {product.quantity}</span>
                       </div>
                     ))}
                   </div>
@@ -333,37 +357,117 @@ const Quick = () => {
               </div>
               
               {/* Search Results */}
-              {searchResults.length > 0 && (
+              {(searchLoading || searchResults.length > 0 || (searchQuery.trim() && !searchLoading)) && (
                 <div className="mt-2 border rounded-lg max-h-64 overflow-y-auto bg-card">
-                  {searchResults.map((product) => {
-                    const price = product.sale_price || product.regular_price || product.price;
-                    const imageUrl = product.images?.[0]?.src || '/placeholder.svg';
-                    
-                    return (
-                      <div
-                        key={product.id}
-                        className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors border-b last:border-b-0"
-                        onClick={() => handleAddProductToTemplate(product)}
-                      >
-                        <img
-                          src={imageUrl}
-                          alt={product.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{product.name}</p>
-                          <p className="text-xs text-primary">
-                            {price && parseFloat(price) > 0 
-                              ? `$${parseFloat(price).toFixed(2)}` 
-                              : 'Price on request'}
-                          </p>
+                  {searchLoading ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      Loading products...
+                    </div>
+                  ) : searchResults.length === 0 && searchQuery.trim() ? (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No products found
+                    </div>
+                  ) : (
+                    searchResults.map((product) => {
+                      const price = product.sale_price || product.regular_price || product.price;
+                      const imageUrl = product.images?.[0]?.src || '/placeholder.svg';
+                      
+                      return (
+                        <div
+                          key={product.id}
+                          className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors border-b last:border-b-0"
+                          onClick={() => handleAddProductToTemplate(product)}
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{product.name}</p>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              {product.store?.name || 'Unknown Vendor'}
+                            </p>
+                            <div className="flex items-center justify-between text-xs gap-4">
+                              <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
+                              <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Quantity Selector */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center border-2 border-border rounded-md overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const input = (e.currentTarget.nextSibling as HTMLInputElement);
+                                  const current = Number(input?.value || '1');
+                                  const next = Math.max(1, current - 1);
+                                  if (input) input.value = String(next);
+                                }}
+                                className="h-8 w-8 text-sm hover:bg-gray-100"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                max={product.stock_quantity || 999}
+                                defaultValue="1"
+                                className="px-2 min-w-[2.5rem] text-center text-xs font-semibold border-x-2 border-border h-8 bg-transparent focus:outline-none"
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 1;
+                                  const maxStock = product.stock_quantity || 999;
+                                  if (value > maxStock) {
+                                    e.target.value = String(maxStock);
+                                    toast.error(`Maximum available quantity is ${maxStock}`);
+                                  } else if (value < 1) {
+                                    e.target.value = '1';
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                  const current = Number(input?.value || '1');
+                                  const maxStock = product.stock_quantity || 999;
+                                  const next = Math.min(maxStock, current + 1);
+                                  if (input) input.value = String(next);
+                                  if (next === maxStock && current < maxStock) {
+                                    toast.error(`Maximum available quantity is ${maxStock}`);
+                                  }
+                                }}
+                                className="h-8 w-8 text-sm hover:bg-gray-100"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const input = (e.currentTarget.previousSibling as HTMLElement)?.querySelector('input') as HTMLInputElement | null;
+                                const qtyVal = input ? Number(input.value || '1') : 1;
+                                // Create a product with quantity for template
+                                const productWithQty = { ...product, quantity: qtyVal };
+                                handleAddProductToTemplate(productWithQty as any);
+                              }}
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <Button size="sm" variant="outline">
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
@@ -391,10 +495,15 @@ const Quick = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-primary">
-                            {price && parseFloat(price) > 0 
-                              ? `$${parseFloat(price).toFixed(2)}` 
-                              : 'Price on request'}
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {product.store?.name || 'Unknown Vendor'}
+                          </p>
+                          <div className="flex items-center justify-between text-xs gap-4 mb-1">
+                            <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
+                            <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
+                          </div>
+                          <p className="text-xs text-primary font-medium">
+                            Quantity: {(product as any).quantity || 1}
                           </p>
                         </div>
                         <Button

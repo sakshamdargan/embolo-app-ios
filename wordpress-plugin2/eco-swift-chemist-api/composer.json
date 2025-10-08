@@ -1,0 +1,20 @@
+{
+    "name": "eco-swift/chemist-api",
+    "description": "JWT + OTP authentication and chemist-scoped REST endpoints for Eco Swift Cart",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=7.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "EcoSwift\\ChemistApi\\": "includes/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Eco Swift Team",
+            "email": "dev@ecoswift.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}

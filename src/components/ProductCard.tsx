@@ -3,7 +3,8 @@ import { Minus, Plus, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/store/useCartStore';
-import { Product } from '@/utils/api';
+import { Product } from '../services/productService';
+import productService from '../services/productService';
 import { toast } from 'sonner';
 
 interface ProductCardProps {
@@ -15,9 +16,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
 
   const price = product.sale_price || product.regular_price || product.price;
-  const imageUrl = product.images?.[0]?.src || '/placeholder.svg';
+  const imageUrl = productService.getProductImageUrl(product);
   const stockQuantity = product.stock_quantity;
-  const inStock = product.stock_status === 'instock';
+  const inStock = productService.isProductInStock(product);
+  const isOnSale = productService.isProductOnSale(product);
+  const discountPercentage = isOnSale ? productService.calculateDiscountPercentage(product.regular_price, product.sale_price) : 0;
 
   const handleAddToCart = () => {
     if (!inStock) {
@@ -32,7 +35,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       quantity: quantity,
       image: imageUrl,
       stock_quantity: stockQuantity,
-      vendorName: product.store?.name || 'Unknown Vendor',
+      vendorName: 'Embolo',
     });
 
     toast.success(`Added ${quantity} ${product.name} to cart`);
@@ -78,7 +81,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              {product.store?.name || 'Vendor'}
+              {product.store?.name || 'Unknown Vendor'}
             </p>
             {stockQuantity && (
               <p className="text-xs text-muted-foreground">

@@ -20,23 +20,25 @@ const Home = () => {
     loadCategories();
   }, []);
 
-  // Filter products by selected vendors
+  // Reload products when vendor selection changes - use server-side filtering
   useEffect(() => {
-    if (allVendorsSelected) {
-      setFilteredProducts(products);
-    } else {
-      const filtered = products.filter(product => 
-        product.store && selectedVendorIds.includes(product.store.id)
-      );
-      setFilteredProducts(filtered);
-    }
-  }, [products, selectedVendorIds, allVendorsSelected]);
+    loadProducts();
+  }, [selectedVendorIds, allVendorsSelected]);
+
+  // No need for client-side filtering since we're doing server-side filtering
+  useEffect(() => {
+    setFilteredProducts(products);
+  }, [products]);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await api.getProducts(1, 40);
+      // Use server-side vendor filtering
+      const vendorIds = allVendorsSelected ? undefined : selectedVendorIds;
+      const data = await api.getProducts(1, 40, vendorIds);
       setProducts(data);
+      // Since we're doing server-side filtering, set filtered products same as products
+      setFilteredProducts(data);
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Failed to load products');

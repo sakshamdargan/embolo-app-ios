@@ -3,6 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
 import Orders from "./pages/Orders";
@@ -23,24 +27,42 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner position="top-center" />
-      <BrowserRouter>
-        <div className="relative">
-          <Header />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/quick" element={<Quick />} />
-              <Route path="/assistance" element={<Assistance />} />
-              <Route path="/user" element={<User />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/updates" element={<Updates />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-          <Navbar />
-        </div>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected routes - All app content requires authentication */}
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <div className="relative">
+                  <Header />
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/cart" element={<Cart />} />
+                      <Route path="/orders" element={<Orders />} />
+                      <Route path="/quick" element={<Quick />} />
+                      <Route path="/assistance" element={<Assistance />} />
+                      <Route path="/user" element={<User />} />
+                      <Route path="/about" element={<AboutUs />} />
+                      <Route path="/updates" element={<Updates />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Layout>
+                  <Navbar />
+                </div>
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
