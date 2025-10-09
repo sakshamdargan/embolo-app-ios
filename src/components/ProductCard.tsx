@@ -93,9 +93,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <span className="text-muted-foreground">MRP: ₹0</span>
           </div>
 
-          {/* Quantity Selector */}
-          <div className="flex items-center gap-2 mt-auto">
-            <div className="flex items-center border-2 border-border rounded-md overflow-hidden">
+          {/* Responsive Quantity Selector */}
+          <div className="flex items-center gap-1 sm:gap-2 mt-auto">
+            <div className="flex items-center border-2 border-border rounded-md overflow-hidden bg-background">
               <button
                 type="button"
                 onClick={(e) => {
@@ -107,10 +107,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   setQuantity(next);
                 }}
                 disabled={!inStock}
-                className="h-9 w-9 text-sm hover:bg-gray-100 disabled:opacity-50"
+                className="
+                  h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 
+                  text-xs sm:text-sm 
+                  hover:bg-gray-100 active:bg-gray-200 
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  transition-all duration-150 ease-in-out
+                  flex items-center justify-center
+                  touch-manipulation
+                "
                 aria-label="Decrease quantity"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
               </button>
               <input
                 ref={inputRef}
@@ -147,7 +155,20 @@ const ProductCard = ({ product }: ProductCardProps) => {
                     setQuantityError('');
                   }
                 }}
-                className="px-2 min-w-[3rem] text-center text-sm font-semibold border-x-2 border-border h-9 bg-transparent focus:outline-none"
+                className="
+                  px-1 xs:px-1.5 sm:px-2 
+                  min-w-[2rem] xs:min-w-[2.5rem] sm:min-w-[3rem] 
+                  w-8 xs:w-10 sm:w-12
+                  text-center 
+                  text-xs xs:text-sm sm:text-sm 
+                  font-semibold 
+                  border-x-2 border-border 
+                  h-7 xs:h-8 sm:h-9 
+                  bg-transparent 
+                  focus:outline-none focus:bg-gray-50
+                  transition-colors duration-150
+                  [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                "
               />
               <button
                 type="button"
@@ -166,21 +187,40 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   }
                 }}
                 disabled={!inStock}
-                className="h-9 w-9 text-sm hover:bg-gray-100 disabled:opacity-50"
+                className="
+                  h-7 w-7 xs:h-8 xs:w-8 sm:h-9 sm:w-9 
+                  text-xs sm:text-sm 
+                  hover:bg-gray-100 active:bg-gray-200 
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  transition-all duration-150 ease-in-out
+                  flex items-center justify-center
+                  touch-manipulation
+                "
                 aria-label="Increase quantity"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
             <Button
               onClick={handleAddToCart}
               disabled={!inStock}
-              className="flex-1 h-9 gap-1 bg-primary hover:bg-primary/90 font-medium text-xs"
+              className="
+                flex-1 
+                h-7 xs:h-8 sm:h-9 
+                gap-0.5 xs:gap-1 sm:gap-1 
+                bg-primary hover:bg-primary/90 active:bg-primary/80
+                font-medium 
+                text-[10px] xs:text-xs sm:text-xs
+                px-1 xs:px-2 sm:px-3
+                transition-all duration-150 ease-in-out
+                touch-manipulation
+              "
               size="sm"
             >
-              <ShoppingCart className="w-4 h-4" />
-              Add
+              <ShoppingCart className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Add</span>
+              <span className="xs:hidden">+</span>
             </Button>
           </div>
           {/* Inline quantity error message */}

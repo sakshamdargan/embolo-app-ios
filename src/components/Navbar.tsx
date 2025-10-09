@@ -17,7 +17,7 @@ const Navbar = () => {
     <>
       {/* Floating Cart Button */}
       <NavLink
-        to="/cart"
+        to="/checkout"
         className="fixed bottom-20 right-4 z-50 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:scale-110 transition-transform"
       >
         <ShoppingCart className="w-6 h-6" />

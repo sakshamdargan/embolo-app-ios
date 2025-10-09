@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Trash2, Minus, Plus, ShoppingCart, MapPin, Package, Loader2, Edit, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,47 +14,17 @@ import { useAddresses } from '@/hooks/useAddresses';
 import { api } from '@/utils/api';
 import { toast } from 'sonner';
 import addressService, { Address, AddressFormData } from '@/services/addressService';
-import { 
-  ShoppingCart, 
-  MapPin, 
-  User, 
-  CreditCard, 
-  Package,
-  ArrowLeft,
-  Loader2,
-  Plus,
-  Edit,
-  Trash2
-} from 'lucide-react';
 
-interface CustomerInfo {
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  state: string;
-  postcode: string;
-}
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { items, clearCart, getTotalPrice } = useCartStore();
+  const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
   const { user } = useAuth();
   const { addresses, loading: addressLoading, addAddress, updateAddress, deleteAddress } = useAddresses();
   const [loading, setLoading] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    state: '',
-    postcode: ''
-  });
   const [addressForm, setAddressForm] = useState<AddressFormData>({
     type: 'shipping',
     first_name: '',
@@ -69,21 +40,8 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    if (items.length === 0) {
-      navigate('/cart');
-      return;
-    }
-
-    // Pre-fill customer info if user is logged in
+    // Pre-fill address form with user data
     if (user) {
-      setCustomerInfo(prev => ({
-        ...prev,
-        name: user.name || '',
-        phone: user.phone || '',
-        email: user.email || ''
-      }));
-      
-      // Pre-fill address form with user data
       setAddressForm(prev => ({
         ...prev,
         first_name: user.name?.split(' ')[0] || '',
@@ -91,7 +49,7 @@ const Checkout = () => {
         phone: user.phone || ''
       }));
     }
-  }, [items, navigate, user]);
+  }, [user]);
 
   // Auto-select default shipping address
   useEffect(() => {
@@ -109,10 +67,6 @@ const Checkout = () => {
     }
   }, [addresses, selectedAddressId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setCustomerInfo(prev => ({ ...prev, [name]: value }));
-  };
 
   const handleAddressFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -123,11 +77,7 @@ const Checkout = () => {
   };
 
   const validateForm = () => {
-    if (!selectedAddressId && addresses.length > 0) {
-      return false;
-    }
-    const required = ['name', 'phone', 'email'];
-    return required.every(field => customerInfo[field as keyof CustomerInfo].trim() !== '');
+    return selectedAddressId !== null;
   };
 
   const handleAddAddress = async () => {
@@ -196,7 +146,7 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) {
-      toast.error('Please complete all required fields');
+      toast.error('Please select a delivery address');
       return;
     }
 
@@ -209,7 +159,7 @@ const Checkout = () => {
     try {
       setLoading(true);
 
-      // Create order with customer details and selected address
+      // Create order with selected address - backend will handle customer info automatically
       const orderData = {
         line_items: items.map((item) => ({
           product_id: item.id,
@@ -218,8 +168,8 @@ const Checkout = () => {
         billing: {
           first_name: selectedAddress.first_name,
           last_name: selectedAddress.last_name,
-          email: customerInfo.email,
-          phone: selectedAddress.phone || customerInfo.phone,
+          email: user?.email || '',
+          phone: selectedAddress.phone || user?.phone || '',
           address_1: selectedAddress.address_1,
           address_2: selectedAddress.address_2 || '',
           city: selectedAddress.city,
@@ -243,7 +193,7 @@ const Checkout = () => {
         meta_data: [
           {
             key: 'customer_name',
-            value: customerInfo.name
+            value: `${selectedAddress.first_name} ${selectedAddress.last_name}`
           },
           {
             key: 'chemist_shop',
@@ -422,11 +372,26 @@ const Checkout = () => {
   );
 
   if (items.length === 0) {
-    return null; // Will redirect in useEffect
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
+          <div className="bg-primary/10 rounded-full p-6 mb-6">
+            <ShoppingCart className="w-16 h-16 text-primary" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
+          <p className="text-muted-foreground mb-8 max-w-sm">
+            Looks like you haven't added any items to your cart yet.
+          </p>
+          <Button onClick={() => navigate('/')} className="px-8">
+            Continue Shopping
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="bg-card border-b">
         <div className="container mx-auto px-4 py-6">
@@ -434,11 +399,11 @@ const Checkout = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/cart')}
+              onClick={() => navigate('/')}
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Cart
+              Back to Home
             </Button>
             <div className="flex items-center gap-3">
               <div className="bg-primary/10 p-3 rounded-xl border border-primary/20">
@@ -447,71 +412,105 @@ const Checkout = () => {
               <h1 className="text-2xl font-bold">Checkout</h1>
             </div>
           </div>
+          <p className="text-muted-foreground mt-2">
+            {items.length} item{items.length !== 1 ? 's' : ''} in your cart
+          </p>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Customer Information */}
+          {/* Left Column - Cart Items & Address */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Cart Items */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Customer Information
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    Your Items
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearCart}
+                    className="gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remove All
+                  </Button>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      value={customerInfo.name}
-                      onChange={handleInputChange}
-                      placeholder="Enter customer's full name"
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={customerInfo.phone}
-                      onChange={handleInputChange}
-                      placeholder="Enter phone number"
-                      disabled={loading}
-                      className={user?.phone ? "bg-gray-50" : ""}
-                    />
-                    {user?.phone && (
-                      <p className="text-xs text-green-600">
-                        ✓ Pre-filled from your account
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={customerInfo.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter email address"
-                    disabled={loading}
-                    className={user?.email ? "bg-gray-50" : ""}
-                  />
-                  {user?.email && (
-                    <p className="text-xs text-green-600">
-                      ✓ Pre-filled from your account
-                    </p>
-                  )}
+              <CardContent>
+                <div className="max-h-[40vh] overflow-y-auto space-y-4">
+                  {items.map((item) => (
+                    <Card 
+                      key={item.id} 
+                      className="rounded-lg border border-gray-200 shadow-sm"
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex gap-4 items-start">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-200"
+                          />
+                          
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <h3 className="font-semibold text-sm line-clamp-2">{item.name}</h3>
+                            {item.vendorName && (
+                              <p className="text-xs text-muted-foreground">Sold by: {item.vendorName}</p>
+                            )}
+                            <p className="text-lg font-bold text-primary">
+                              ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
+                              <span className="text-sm text-muted-foreground font-normal ml-2">
+                                (₹{parseFloat(item.price).toFixed(2)} each)
+                              </span>
+                            </p>
+
+                            <div className="flex items-center justify-between pt-2">
+                              <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-muted/50">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                  disabled={item.quantity <= 1}
+                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-r border-gray-300"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </Button>
+                                <span className="px-3 text-sm font-medium min-w-8 text-center bg-background">
+                                  {item.quantity}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-l border-gray-300"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                              </div>
+
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeItem(item.id)}
+                                className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
+
 
             {/* Delivery Address */}
             <Card>
@@ -637,83 +636,18 @@ const Checkout = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Payment Method */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="w-5 h-5" />
-                  Payment Method
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
-                    <div>
-                      <h4 className="font-medium text-blue-900">Direct Payment to Distributors</h4>
-                      <p className="text-sm text-blue-700">
-                        Payment will be processed directly with the distributors. No online payment required.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Order Summary */}
+          {/* Right Column - Order Summary */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  Order Summary
-                </CardTitle>
+                <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-12 h-12 object-cover rounded border"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm line-clamp-2">{item.name}</h4>
-                        {item.vendorName && (
-                          <p className="text-xs text-muted-foreground">
-                            Vendor: {item.vendorName}
-                          </p>
-                        )}
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm text-muted-foreground">
-                            Qty: {item.quantity}
-                          </span>
-                          <span className="font-medium">
-                            ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>₹{getTotalPrice().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Delivery</span>
-                    <span className="text-green-600">Free</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between font-bold text-2xl">
+                    <span>Total Amount</span>
                     <span className="text-primary">₹{getTotalPrice().toFixed(2)}</span>
                   </div>
                 </div>
@@ -726,36 +660,38 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <Button
-                  onClick={handlePlaceOrder}
-                  disabled={loading || !validateForm() || !selectedAddressId}
-                  className="w-full h-12 text-lg font-semibold"
-                  size="lg"
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Placing Order...
-                    </div>
-                  ) : (
-                    `Place Order - ₹${getTotalPrice().toFixed(2)}`
-                  )}
-                </Button>
-
-                {(!validateForm() || !selectedAddressId) && (
+                {!validateForm() && (
                   <Alert>
                     <AlertDescription>
-                      {!validateForm() 
-                        ? "Please fill in all required customer information."
-                        : !selectedAddressId 
-                        ? "Please select a delivery address."
-                        : "Please complete all required fields to continue."
-                      }
+                      Please select a delivery address to continue.
                     </AlertDescription>
                   </Alert>
                 )}
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky Bottom Place Order Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="max-w-6xl mx-auto">
+            <Button
+              onClick={handlePlaceOrder}
+              disabled={loading || !validateForm()}
+              className="w-full h-14 bg-primary hover:bg-primary/90 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all rounded-xl"
+              size="lg"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Placing Order...
+                </div>
+              ) : (
+                `Place Order - ₹${getTotalPrice().toFixed(2)}`
+              )}
+            </Button>
           </div>
         </div>
       </div>

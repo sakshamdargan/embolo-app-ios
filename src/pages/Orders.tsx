@@ -48,7 +48,7 @@ const Orders = () => {
       addedCount += item.quantity;
     });
     toast.success(`Added ${addedCount} items to cart from order #${order.id}`);
-    navigate('/cart');
+    navigate('/checkout');
   };
 
   const getStatusColor = (status: string) => {

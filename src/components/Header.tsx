@@ -63,7 +63,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/cart')}
+              onClick={() => navigate('/checkout')}
               className="relative text-black hover:bg-gray-100 p-2 font-semibold [font-style:normal] [font-weight:600] [font-variant:normal] [text-transform:none] [line-height:1]"
             >
               <ShoppingCart className="!w-6 !h-6" strokeWidth={2.5} />
