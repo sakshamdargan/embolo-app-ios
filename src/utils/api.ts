@@ -147,9 +147,14 @@ export const api = {
   // Orders - Modern JWT-based custom endpoints
   createOrder: async (orderData: CreateOrderData) => {
     try {
+      console.log('🛒 API createOrder called with:', orderData);
       const response = await orderService.createOrder(orderData);
-      return response.data;
+      console.log('🛒 API createOrder response received:', response);
+      // Backend returns {success: true, data: {...}, message: '...'}
+      // Return the full response to handle success/error properly
+      return response;
     } catch (error) {
+      console.error('🛒 API createOrder error:', error);
       console.error('Failed to create order:', error);
       throw error;
     }

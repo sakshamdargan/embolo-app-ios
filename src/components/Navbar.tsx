@@ -1,10 +1,14 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Zap, MessageCircle, Package, ShoppingCart } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { Badge } from '@/components/ui/badge';
 
 const Navbar = () => {
   const totalItems = useCartStore((state) => state.getTotalItems());
+  const location = useLocation();
+  
+  // Hide navbar on checkout page
+  const isCheckoutPage = location.pathname === '/checkout';
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
@@ -12,6 +16,11 @@ const Navbar = () => {
     { path: '/assistance', icon: MessageCircle, label: 'Assistance' },
     { path: '/orders', icon: Package, label: 'Orders' },
   ];
+
+  // Don't render navbar on checkout page
+  if (isCheckoutPage) {
+    return null;
+  }
 
   return (
     <>

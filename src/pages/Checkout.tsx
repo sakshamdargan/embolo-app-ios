@@ -207,38 +207,54 @@ const Checkout = () => {
         device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
       };
 
+      console.log('🏁 Checkout - Submitting order data:', orderData);
       const response = await api.createOrder(orderData);
+      console.log('🏁 Checkout - Received response:', response);
+      console.log('🏁 Checkout - Response success flag:', response?.success);
+      console.log('🏁 Checkout - Response data:', response?.data);
       
-      // Set the selected address as default billing address if it's not already
-      if (selectedAddress && !selectedAddress.is_default_billing) {
-        try {
-          await addressService.setDefaultAddress(selectedAddress.id, 'billing');
-        } catch (error) {
-          console.warn('Failed to set default billing address:', error);
-          // Don't fail the order for this
+      // Backend returns {success: true, data: {...}, message: '...'}
+      // Check for success flag in the response
+      if (response?.success === true) {
+        console.log('✅ Order creation confirmed successful');
+        // Set the selected address as default billing address if it's not already
+        if (selectedAddress && !selectedAddress.is_default_billing) {
+          try {
+            await addressService.setDefaultAddress(selectedAddress.id, 'billing');
+          } catch (error) {
+            console.warn('Failed to set default billing address:', error);
+          }
         }
-      }
-      
-      clearCart();
-      toast.success('Order placed successfully! Your order is now being processed.');
-      navigate('/orders');
-    } catch (error: any) {
-      console.error('Error creating order:', error);
-      
-      // Check if order was actually created despite the error
-      if (error.response?.status === 200 || error.response?.data?.success) {
+        
         clearCart();
         toast.success('Order placed successfully! Your order is now being processed.');
         navigate('/orders');
       } else {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to place order. Please try again.';
+        console.error('❌ Response success flag is not true:', response);
+        throw new Error(response?.message || 'Failed to create order');
+      }
+    } catch (error: any) {
+      console.error('Error creating order:', error);
+      
+      // Check if the error response actually contains a successful order
+      const responseData = error.response?.data;
+      const isActuallySuccess = 
+        error.response?.status === 200 || 
+        responseData?.success === true ||
+        (responseData?.data && responseData.data.id);
+      
+      if (isActuallySuccess) {
+        clearCart();
+        toast.success('Order placed successfully! Your order is now being processed.');
+        navigate('/orders');
+      } else {
+        const errorMessage = responseData?.message || error.message || 'Failed to place order. Please try again.';
         toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
     }
   };
-
   const renderAddressForm = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -391,30 +407,28 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/')}
-              className="gap-2"
+              className="gap-1 text-xs px-2 py-1 h-8"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              <ArrowLeft className="w-3 h-3" />
+              Back
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-3 rounded-xl border border-primary/20">
-                <ShoppingCart className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/10 p-2 rounded-lg border border-primary/20">
+                <ShoppingCart className="w-4 h-4 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold">Checkout</h1>
+              <h1 className="text-lg font-bold">Checkout</h1>
             </div>
+            <div className="w-12"></div> {/* Spacer for centering */}
           </div>
-          <p className="text-muted-foreground mt-2">
-            {items.length} item{items.length !== 1 ? 's' : ''} in your cart
-          </p>
         </div>
       </div>
 
