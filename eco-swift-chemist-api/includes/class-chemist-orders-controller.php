@@ -182,47 +182,59 @@ class Chemist_Orders_Controller {
             // Set WooCommerce created_via to ensure proper origin detection
             $order->set_created_via('checkout');
             
-            // Add WooCommerce order attribution data (exactly as WC expects)
-            $attribution_data = [
-                'source_type' => 'typein',
-                'referrer' => '(direct)',
-                'utm_source' => '(direct)',
-                'utm_medium' => '(none)',
-                'utm_campaign' => '(direct)',
-                'utm_term' => '(not set)',
-                'utm_content' => '(not set)',
-                'session_entry' => home_url(),
-                'session_start_time' => time(),
-                'session_pages' => 1,
-                'session_count' => 1,
-                'user_agent' => 'EcoSwift-ChemistApp/1.0',
-                'device_type' => $device_type
-            ];
+            // ============================================================
+            // CRITICAL: Proper WooCommerce Attribution Setup
+            // ============================================================
             
-            $order->update_meta_data('_wc_order_attribution_source_type', 'typein');
-            $order->update_meta_data('_wc_order_attribution_referrer', '(direct)');
-            $order->update_meta_data('_wc_order_attribution_utm_source', '(direct)');
-            $order->update_meta_data('_wc_order_attribution_utm_medium', '(none)');
-            $order->update_meta_data('_wc_order_attribution_utm_campaign', '(direct)');
-            $order->update_meta_data('_wc_order_attribution_utm_term', '(not set)');
-            $order->update_meta_data('_wc_order_attribution_utm_content', '(not set)');
-            $order->update_meta_data('_wc_order_attribution_session_entry', home_url());
-            $order->update_meta_data('_wc_order_attribution_session_start_time', time());
-            $order->update_meta_data('_wc_order_attribution_session_pages', 1);
-            $order->update_meta_data('_wc_order_attribution_session_count', 1);
-            $order->update_meta_data('_wc_order_attribution_user_agent', 'EcoSwift-ChemistApp/1.0');
-            $order->update_meta_data('_wc_order_attribution_device_type', $device_type);
-            
-            // Legacy format for older WC versions
-            $order->update_meta_data('_wc_order_attribution_data', $attribution_data);
-            
-            // Standard WooCommerce metadata
-            $order->update_meta_data('_created_via', 'checkout');
-            $order->update_meta_data('_order_origin', 'direct');
-            $order->update_meta_data('_order_source', 'web');
-            $order->update_meta_data('_customer_user_agent', 'EcoSwift-ChemistApp/1.0');
-            $order->update_meta_data('_app_version', '1.0');
-            $order->update_meta_data('_order_channel', 'mobile_app');
+            // Step 1: Build attribution data in the exact format WooCommerce expects
+            $attribution_data = array(
+                'source_type'         => 'typein',  // 'typein' = direct traffic
+                'referrer'            => '(direct)',
+                'utm_campaign'        => '(direct)',
+                'utm_source'          => '(direct)',
+                'utm_medium'          => '(direct)',
+                'utm_content'         => '',
+                'utm_id'              => '',
+                'utm_term'            => '',
+                'session_entry'       => esc_url( home_url( '/' ) ),
+                'session_start_time'  => current_time( 'timestamp' ),
+                'session_pages'       => 1,
+                'session_count'       => 1,
+                'user_agent'          => 'EcoSwift-ChemistApp/1.0',
+                'device_type'         => $device_type, // 'mobile', 'tablet', or 'desktop'
+                'origin'              => 'direct',
+            );
+
+            // Step 2: Store attribution data using WooCommerce's internal method
+            // This is the key - use update_meta_data with the exact key WC expects
+            $order->update_meta_data( '_wc_order_attribution_source_type', $attribution_data['source_type'] );
+            $order->update_meta_data( '_wc_order_attribution_referrer', $attribution_data['referrer'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_campaign', $attribution_data['utm_campaign'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_source', $attribution_data['utm_source'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_medium', $attribution_data['utm_medium'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_content', $attribution_data['utm_content'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_id', $attribution_data['utm_id'] );
+            $order->update_meta_data( '_wc_order_attribution_utm_term', $attribution_data['utm_term'] );
+            $order->update_meta_data( '_wc_order_attribution_session_entry', $attribution_data['session_entry'] );
+            $order->update_meta_data( '_wc_order_attribution_session_start_time', $attribution_data['session_start_time'] );
+            $order->update_meta_data( '_wc_order_attribution_session_pages', $attribution_data['session_pages'] );
+            $order->update_meta_data( '_wc_order_attribution_session_count', $attribution_data['session_count'] );
+            $order->update_meta_data( '_wc_order_attribution_user_agent', $attribution_data['user_agent'] );
+            $order->update_meta_data( '_wc_order_attribution_device_type', $attribution_data['device_type'] );
+            $order->update_meta_data( '_wc_order_attribution_origin', $attribution_data['origin'] );
+
+            // Step 3: Store the complete attribution array (for backward compatibility)
+            $order->update_meta_data( '_wc_order_attribution_data', $attribution_data );
+
+            // Step 4: Add custom app-specific metadata
+            $order->update_meta_data( '_order_channel', 'mobile_app' );
+            $order->update_meta_data( '_app_version', '1.0' );
+            $order->update_meta_data( '_api_created', 'yes' );
+            $order->update_meta_data( '_api_timestamp', current_time( 'mysql' ) );
+            $order->update_meta_data( '_created_via', 'checkout' );
+            $order->update_meta_data( '_order_origin', 'direct' );
+            $order->update_meta_data( '_order_source', 'web' );
+            $order->update_meta_data( '_customer_user_agent', 'EcoSwift-ChemistApp/1.0' );
             
             // Save metadata
             $order->save_meta_data();
@@ -241,20 +253,83 @@ class Chemist_Orders_Controller {
             // Final save to ensure all data is persisted before email triggers
             $order->save();
             
+            // CRITICAL: Ensure all address data is saved before triggering emails
+            // Force refresh the order object to ensure all data is loaded
+            $order = wc_get_order($order->get_id());
+            
+            // Verify and re-set billing address if needed
+            if (!empty($billing)) {
+                // Double-check billing address is properly set
+                if (empty($order->get_billing_first_name()) && !empty($billing['first_name'])) {
+                    $order->set_billing_first_name($billing['first_name']);
+                }
+                if (empty($order->get_billing_last_name()) && !empty($billing['last_name'])) {
+                    $order->set_billing_last_name($billing['last_name']);
+                }
+                if (empty($order->get_billing_email()) && !empty($billing['email'])) {
+                    $order->set_billing_email($billing['email']);
+                }
+                if (empty($order->get_billing_phone()) && !empty($billing['phone'])) {
+                    $order->set_billing_phone($billing['phone']);
+                }
+                if (empty($order->get_billing_address_1()) && !empty($billing['address_1'])) {
+                    $order->set_billing_address_1($billing['address_1']);
+                }
+                if (empty($order->get_billing_city()) && !empty($billing['city'])) {
+                    $order->set_billing_city($billing['city']);
+                }
+                if (empty($order->get_billing_state()) && !empty($billing['state'])) {
+                    $order->set_billing_state($billing['state']);
+                }
+                if (empty($order->get_billing_postcode()) && !empty($billing['postcode'])) {
+                    $order->set_billing_postcode($billing['postcode']);
+                }
+                if (empty($order->get_billing_country()) && !empty($billing['country'])) {
+                    $order->set_billing_country($billing['country']);
+                }
+                
+                // Save after setting billing fields
+                $order->save();
+            }
+            
             // Add order note with customer and shop info
             $customer_name = get_user_meta($user->ID, 'billing_first_name', true) . ' ' . get_user_meta($user->ID, 'billing_last_name', true);
             $shop_name = get_user_meta($user->ID, 'shop_name', true);
             $order->add_order_note("Order created via Eco Swift Chemist App by {$customer_name} from {$shop_name}");
             
-            // Ensure order status is set for proper email triggering
+            // IMPORTANT: Don't use update_status with email trigger here
+            // Set status without triggering emails first
+            $order->set_status('processing');
+            $order->save();
+            
+            // ============================================================
+            // CRITICAL: Trigger WooCommerce Hooks for Analytics
+            // ============================================================
+            
+            // This hook is essential - it tells WooCommerce to process the order for analytics
+            do_action( 'woocommerce_new_order', $order->get_id(), $order );
+            
+            // This hook ensures attribution data is indexed for reporting
+            do_action( 'woocommerce_checkout_order_created', $order );
+            
+            // Additional hook for order processing
+            do_action( 'woocommerce_api_create_order', $order->get_id(), $order, $request );
+            
+            // ============================================================
+            // NOW Trigger Email Hooks (after all data is confirmed saved)
+            // ============================================================
+            
+            // Refresh order one more time to ensure all data is loaded for emails
+            $order = wc_get_order($order->get_id());
+            
+            // Trigger order status change to processing WITH email notification
             $order->update_status('processing', 'Order created via Eco Swift Chemist App', true);
             
-            // Trigger WooCommerce order creation hooks for proper email handling
+            // Additional email hooks for completeness
             do_action('woocommerce_checkout_order_processed', $order->get_id(), [], $order);
-            do_action('woocommerce_new_order', $order->get_id(), $order);
             
-            // Trigger specific email for processing orders
-            do_action('woocommerce_order_status_processing', $order->get_id(), $order);
+            // Trigger new order email specifically
+            do_action('woocommerce_order_status_pending_to_processing', $order->get_id(), $order);
 
             return rest_ensure_response([
                 'success' => true,
