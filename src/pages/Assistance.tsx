@@ -7,6 +7,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { HelpCircle, Headphones, MessageCircle, Mail, Phone, Clock, Shield, Truck, FileText, User } from 'lucide-react';
+import RaiseTicket from '@/components/RaiseTicket';
+import { Toaster } from '@/components/ui/sonner';
 
 const Assistance = () => {
   const faqs = [
@@ -42,6 +44,7 @@ const Assistance = () => {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: '"Roboto", sans-serif', fontWeight: 400 }}>
+      <Toaster position="top-center" richColors />
       <main className="container mx-auto px-4 py-6 space-y-8">
 
         {/* ✅ Professional Header with Bottom Line */}
@@ -88,31 +91,8 @@ const Assistance = () => {
           </Card>
         </div>
 
-        {/* ✅ Fluent Support iframe - Blended Design */}
-        <Card className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <CardHeader className="bg-white border-b border-gray-200 py-3 px-4">
-            <CardTitle className="flex items-center gap-2 text-gray-900 text-base font-semibold">
-              <div className="bg-[#00aa63] p-1.5 rounded">
-                <MessageCircle className="w-4 h-4 text-white" />
-              </div>
-              Create Support Ticket
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="w-full bg-white">
-              <iframe
-                src="https://embolo.in/ss-2/"
-                title="Support Ticket System"
-                className="w-full h-[500px] border-0"
-                loading="lazy"
-                style={{ 
-                  fontFamily: '"Roboto", sans-serif',
-                  fontWeight: 400
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* ✅ RaiseTicket Component - Fluent Support Integration */}
+        <RaiseTicket />
 
         {/* ✅ Professional FAQ Section */}
         <Card className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
