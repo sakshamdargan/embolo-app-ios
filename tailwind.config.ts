@@ -13,7 +13,7 @@ export default {
       },
     },
     screens: {
-      'xs': '475px',
+      'xs': '375px',  // iPhone 13 Pro and similar small phones
       'sm': '640px',
       'md': '768px',
       'lg': '1024px',
