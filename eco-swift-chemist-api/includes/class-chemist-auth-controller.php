@@ -55,6 +55,11 @@ class Chemist_Auth_Controller {
                 'owner_last_name'   => ['required' => true, 'type' => 'string'],
                 'business_type'     => ['required' => true, 'type' => 'string'],
                 'license_data'      => ['required' => false, 'type' => 'object'],
+                'address'           => ['required' => false, 'type' => 'string'],
+                'city'              => ['required' => false, 'type' => 'string'],
+                'state'             => ['required' => false, 'type' => 'string'],
+                'postcode'          => ['required' => false, 'type' => 'string'],
+                'country'           => ['required' => false, 'type' => 'string'],
             ],
         ]);
 
@@ -238,6 +243,11 @@ class Chemist_Auth_Controller {
             $owner_last_name = sanitize_text_field($request->get_param('owner_last_name'));
             $business_type = sanitize_text_field($request->get_param('business_type'));
             $license_data = $request->get_param('license_data');
+            $address = sanitize_text_field($request->get_param('address'));
+            $city = sanitize_text_field($request->get_param('city'));
+            $state = sanitize_text_field($request->get_param('state'));
+            $postcode = sanitize_text_field($request->get_param('postcode'));
+            $country = sanitize_text_field($request->get_param('country'));
             
             // Validate OTP
             $transient_key = 'chemist_register_otp_' . md5($phone . $email);
@@ -272,6 +282,61 @@ class Chemist_Auth_Controller {
             update_user_meta($user_id, 'billing_phone', str_replace('+91', '', $phone));
             update_user_meta($user_id, 'billing_first_name', $owner_first_name);
             update_user_meta($user_id, 'billing_last_name', $owner_last_name);
+            
+            // Save address data if provided
+            if ($address) {
+                // Save to WooCommerce billing/shipping fields for compatibility
+                update_user_meta($user_id, 'billing_address_1', $address);
+                update_user_meta($user_id, 'billing_city', $city);
+                update_user_meta($user_id, 'billing_state', $state);
+                update_user_meta($user_id, 'billing_postcode', $postcode);
+                update_user_meta($user_id, 'billing_country', $country ?: 'IN');
+                
+                update_user_meta($user_id, 'shipping_address_1', $address);
+                update_user_meta($user_id, 'shipping_city', $city);
+                update_user_meta($user_id, 'shipping_state', $state);
+                update_user_meta($user_id, 'shipping_postcode', $postcode);
+                update_user_meta($user_id, 'shipping_country', $country ?: 'IN');
+                update_user_meta($user_id, 'shipping_first_name', $owner_first_name);
+                update_user_meta($user_id, 'shipping_last_name', $owner_last_name);
+                
+                // Also save to new address management system
+                $addresses_data = [];
+                
+                // Create billing address
+                $billing_id = uniqid('addr_');
+                $addresses_data[$billing_id] = [
+                    'type' => 'billing',
+                    'first_name' => $owner_first_name,
+                    'last_name' => $owner_last_name,
+                    'address_1' => $address,
+                    'address_2' => '',
+                    'city' => $city,
+                    'state' => $state,
+                    'postcode' => $postcode,
+                    'country' => $country ?: 'IN',
+                    'phone' => str_replace('+91', '', $phone)
+                ];
+                
+                // Create shipping address
+                $shipping_id = uniqid('addr_');
+                $addresses_data[$shipping_id] = [
+                    'type' => 'shipping',
+                    'first_name' => $owner_first_name,
+                    'last_name' => $owner_last_name,
+                    'address_1' => $address,
+                    'address_2' => '',
+                    'city' => $city,
+                    'state' => $state,
+                    'postcode' => $postcode,
+                    'country' => $country ?: 'IN',
+                    'phone' => str_replace('+91', '', $phone)
+                ];
+                
+                update_user_meta($user_id, 'user_addresses', $addresses_data);
+                update_user_meta($user_id, 'default_billing_address', $billing_id);
+                update_user_meta($user_id, 'default_shipping_address', $shipping_id);
+            }
             
             // Store license data if provided
             if ($license_data && is_array($license_data)) {

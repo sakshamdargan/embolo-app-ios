@@ -74,7 +74,7 @@ class Chemist_Orders_Controller {
             // Create WooCommerce order
             $order = wc_create_order([
                 'customer_id' => $user->ID,
-                'status' => 'pending'
+                'status' => 'processing'
             ]);
 
             if (is_wp_error($order)) {
@@ -115,11 +115,20 @@ class Chemist_Orders_Controller {
             // Calculate totals
             $order->calculate_totals();
 
-            // Save order
+            // Save order first time
+            $order->save();
+            
+            // Force update billing and shipping addresses again to ensure they're saved
+            $order->set_address($billing, 'billing');
+            $order->set_address($shipping, 'shipping');
+            
+            // Save again to ensure addresses are properly stored
             $order->save();
 
-            // Add order note
-            $order->add_order_note('Order created via Eco Swift Chemist App');
+            // Add order note with customer and shop info
+            $customer_name = get_user_meta($user->ID, 'billing_first_name', true) . ' ' . get_user_meta($user->ID, 'billing_last_name', true);
+            $shop_name = get_user_meta($user->ID, 'shop_name', true);
+            $order->add_order_note("Order created via Eco Swift Chemist App by {$customer_name} from {$shop_name}");
 
             return rest_ensure_response([
                 'success' => true,

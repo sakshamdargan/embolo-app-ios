@@ -23,12 +23,14 @@ require_once __DIR__ . '/includes/class-token-service.php';
 require_once __DIR__ . '/includes/class-chemist-auth-controller.php';
 require_once __DIR__ . '/includes/class-chemist-products-controller.php';
 require_once __DIR__ . '/includes/class-chemist-orders-controller.php';
+require_once __DIR__ . '/includes/class-chemist-address-controller.php';
 require_once __DIR__ . '/includes/class-admin.php';
 
 add_action('rest_api_init', function () {
     (new \EcoSwift\ChemistApi\Chemist_Auth_Controller())->register_routes();
     (new \EcoSwift\ChemistApi\Chemist_Products_Controller())->register_routes();
     (new \EcoSwift\ChemistApi\Chemist_Orders_Controller())->register_routes();
+    (new \EcoSwift\ChemistApi\Chemist_Address_Controller())->register_routes();
 });
 
 // Initialize admin functionality

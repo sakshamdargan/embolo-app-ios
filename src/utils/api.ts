@@ -1,6 +1,7 @@
 import productService from '../services/productService';
 import orderService, { CreateOrderData } from '../services/orderService';
 import authService from '../services/authService';
+import addressService from '../services/addressService';
 
 // Type definitions for API responses - these match the service interfaces
 // TODO: Consider migrating imports to use service types directly
@@ -245,6 +246,57 @@ export const api = {
       return response;
     } catch (error) {
       console.error('Failed to get user profile:', error);
+      throw error;
+    }
+  },
+
+  // Address Management
+  getAddresses: async () => {
+    try {
+      const response = await addressService.getAddresses();
+      return response;
+    } catch (error) {
+      console.error('Failed to get addresses:', error);
+      throw error;
+    }
+  },
+
+  addAddress: async (addressData: any) => {
+    try {
+      const response = await addressService.addAddress(addressData);
+      return response;
+    } catch (error) {
+      console.error('Failed to add address:', error);
+      throw error;
+    }
+  },
+
+  updateAddress: async (id: string, addressData: any) => {
+    try {
+      const response = await addressService.updateAddress(id, addressData);
+      return response;
+    } catch (error) {
+      console.error('Failed to update address:', error);
+      throw error;
+    }
+  },
+
+  deleteAddress: async (id: string) => {
+    try {
+      const response = await addressService.deleteAddress(id);
+      return response;
+    } catch (error) {
+      console.error('Failed to delete address:', error);
+      throw error;
+    }
+  },
+
+  setDefaultAddress: async (id: string, type: 'billing' | 'shipping') => {
+    try {
+      const response = await addressService.setDefaultAddress(id, type);
+      return response;
+    } catch (error) {
+      console.error('Failed to set default address:', error);
       throw error;
     }
   },

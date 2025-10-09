@@ -85,6 +85,11 @@ export interface RegistrationData {
   owner_last_name: string;
   business_type: string;
   license_data?: LicenseData;
+  address?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
 }
 
 class AuthService {
