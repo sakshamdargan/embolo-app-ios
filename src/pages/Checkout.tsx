@@ -253,7 +253,8 @@ const Checkout = () => {
             key: 'order_type',
             value: 'chemist_order'
           }
-        ]
+        ],
+        device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
       };
 
       const response = await api.createOrder(orderData);

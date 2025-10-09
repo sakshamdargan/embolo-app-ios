@@ -15,9 +15,14 @@ class Chemist_Orders_Controller {
             'callback'            => [$this, 'create_order'],
             'permission_callback' => [$this, 'check_auth_permission'],
             'args'                => [
-                'line_items' => ['required' => true, 'type' => 'array'],
-                'billing'    => ['required' => true, 'type' => 'object'],
-                'shipping'   => ['required' => false, 'type' => 'object'],
+                'line_items'   => ['required' => true, 'type' => 'array'],
+                'billing'      => ['required' => true, 'type' => 'object'],
+                'shipping'     => ['required' => false, 'type' => 'object'],
+                'device_type'  => ['required' => false, 'type' => 'string'],
+                'payment_method' => ['required' => false, 'type' => 'string'],
+                'payment_method_title' => ['required' => false, 'type' => 'string'],
+                'status'       => ['required' => false, 'type' => 'string'],
+                'meta_data'    => ['required' => false, 'type' => 'array'],
             ],
         ]);
 
@@ -74,7 +79,8 @@ class Chemist_Orders_Controller {
             // Create WooCommerce order
             $order = wc_create_order([
                 'customer_id' => $user->ID,
-                'status' => 'processing'
+                'status' => 'processing',
+                'created_via' => 'checkout'
             ]);
 
             if (is_wp_error($order)) {
@@ -102,11 +108,22 @@ class Chemist_Orders_Controller {
                 $order->add_product($product, $quantity);
             }
 
-            // Set billing address
-            $order->set_address($billing, 'billing');
+            // Set billing address with proper validation
+            if (!empty($billing)) {
+                $order->set_address($billing, 'billing');
+                // Ensure billing email is set for order emails
+                if (!empty($billing['email'])) {
+                    $order->set_billing_email($billing['email']);
+                }
+                if (!empty($billing['phone'])) {
+                    $order->set_billing_phone($billing['phone']);
+                }
+            }
             
             // Set shipping address
-            $order->set_address($shipping, 'shipping');
+            if (!empty($shipping)) {
+                $order->set_address($shipping, 'shipping');
+            }
 
             // Set payment method
             $order->set_payment_method('cod');
@@ -119,16 +136,125 @@ class Chemist_Orders_Controller {
             $order->save();
             
             // Force update billing and shipping addresses again to ensure they're saved
-            $order->set_address($billing, 'billing');
-            $order->set_address($shipping, 'shipping');
+            if (!empty($billing)) {
+                $order->set_address($billing, 'billing');
+                // Set individual billing fields to ensure they're saved
+                if (isset($billing['first_name'])) $order->set_billing_first_name($billing['first_name']);
+                if (isset($billing['last_name'])) $order->set_billing_last_name($billing['last_name']);
+                if (isset($billing['email'])) $order->set_billing_email($billing['email']);
+                if (isset($billing['phone'])) $order->set_billing_phone($billing['phone']);
+                if (isset($billing['address_1'])) $order->set_billing_address_1($billing['address_1']);
+                if (isset($billing['address_2'])) $order->set_billing_address_2($billing['address_2']);
+                if (isset($billing['city'])) $order->set_billing_city($billing['city']);
+                if (isset($billing['state'])) $order->set_billing_state($billing['state']);
+                if (isset($billing['postcode'])) $order->set_billing_postcode($billing['postcode']);
+                if (isset($billing['country'])) $order->set_billing_country($billing['country']);
+            }
+            
+            if (!empty($shipping)) {
+                $order->set_address($shipping, 'shipping');
+                // Set individual shipping fields to ensure they're saved
+                if (isset($shipping['first_name'])) $order->set_shipping_first_name($shipping['first_name']);
+                if (isset($shipping['last_name'])) $order->set_shipping_last_name($shipping['last_name']);
+                if (isset($shipping['address_1'])) $order->set_shipping_address_1($shipping['address_1']);
+                if (isset($shipping['address_2'])) $order->set_shipping_address_2($shipping['address_2']);
+                if (isset($shipping['city'])) $order->set_shipping_city($shipping['city']);
+                if (isset($shipping['state'])) $order->set_shipping_state($shipping['state']);
+                if (isset($shipping['postcode'])) $order->set_shipping_postcode($shipping['postcode']);
+                if (isset($shipping['country'])) $order->set_shipping_country($shipping['country']);
+            }
             
             // Save again to ensure addresses are properly stored
             $order->save();
+            
+            // Ensure customer information is properly set for emails
+            if (!empty($billing['first_name']) || !empty($billing['last_name'])) {
+                $customer_name = trim(($billing['first_name'] ?? '') . ' ' . ($billing['last_name'] ?? ''));
+                if ($customer_name) {
+                    $order->update_meta_data('_billing_full_name', $customer_name);
+                    $order->update_meta_data('_customer_display_name', $customer_name);
+                }
+            }
 
+            // Get device type from request, fallback to 'mobile'
+            $device_type = $request->get_param('device_type') ?: 'mobile';
+
+            // Set WooCommerce created_via to ensure proper origin detection
+            $order->set_created_via('checkout');
+            
+            // Add WooCommerce order attribution data (exactly as WC expects)
+            $attribution_data = [
+                'source_type' => 'typein',
+                'referrer' => '(direct)',
+                'utm_source' => '(direct)',
+                'utm_medium' => '(none)',
+                'utm_campaign' => '(direct)',
+                'utm_term' => '(not set)',
+                'utm_content' => '(not set)',
+                'session_entry' => home_url(),
+                'session_start_time' => time(),
+                'session_pages' => 1,
+                'session_count' => 1,
+                'user_agent' => 'EcoSwift-ChemistApp/1.0',
+                'device_type' => $device_type
+            ];
+            
+            $order->update_meta_data('_wc_order_attribution_source_type', 'typein');
+            $order->update_meta_data('_wc_order_attribution_referrer', '(direct)');
+            $order->update_meta_data('_wc_order_attribution_utm_source', '(direct)');
+            $order->update_meta_data('_wc_order_attribution_utm_medium', '(none)');
+            $order->update_meta_data('_wc_order_attribution_utm_campaign', '(direct)');
+            $order->update_meta_data('_wc_order_attribution_utm_term', '(not set)');
+            $order->update_meta_data('_wc_order_attribution_utm_content', '(not set)');
+            $order->update_meta_data('_wc_order_attribution_session_entry', home_url());
+            $order->update_meta_data('_wc_order_attribution_session_start_time', time());
+            $order->update_meta_data('_wc_order_attribution_session_pages', 1);
+            $order->update_meta_data('_wc_order_attribution_session_count', 1);
+            $order->update_meta_data('_wc_order_attribution_user_agent', 'EcoSwift-ChemistApp/1.0');
+            $order->update_meta_data('_wc_order_attribution_device_type', $device_type);
+            
+            // Legacy format for older WC versions
+            $order->update_meta_data('_wc_order_attribution_data', $attribution_data);
+            
+            // Standard WooCommerce metadata
+            $order->update_meta_data('_created_via', 'checkout');
+            $order->update_meta_data('_order_origin', 'direct');
+            $order->update_meta_data('_order_source', 'web');
+            $order->update_meta_data('_customer_user_agent', 'EcoSwift-ChemistApp/1.0');
+            $order->update_meta_data('_app_version', '1.0');
+            $order->update_meta_data('_order_channel', 'mobile_app');
+            
+            // Save metadata
+            $order->save_meta_data();
+            
+            // Final save to ensure all metadata is persisted
+            $order->save();
+            
+            // Force WooCommerce to recognize this as a direct order
+            add_filter('woocommerce_order_get_created_via', function($created_via, $order_obj) use ($order) {
+                if ($order_obj->get_id() === $order->get_id()) {
+                    return 'checkout';
+                }
+                return $created_via;
+            }, 10, 2);
+
+            // Final save to ensure all data is persisted before email triggers
+            $order->save();
+            
             // Add order note with customer and shop info
             $customer_name = get_user_meta($user->ID, 'billing_first_name', true) . ' ' . get_user_meta($user->ID, 'billing_last_name', true);
             $shop_name = get_user_meta($user->ID, 'shop_name', true);
             $order->add_order_note("Order created via Eco Swift Chemist App by {$customer_name} from {$shop_name}");
+            
+            // Ensure order status is set for proper email triggering
+            $order->update_status('processing', 'Order created via Eco Swift Chemist App', true);
+            
+            // Trigger WooCommerce order creation hooks for proper email handling
+            do_action('woocommerce_checkout_order_processed', $order->get_id(), [], $order);
+            do_action('woocommerce_new_order', $order->get_id(), $order);
+            
+            // Trigger specific email for processing orders
+            do_action('woocommerce_order_status_processing', $order->get_id(), $order);
 
             return rest_ensure_response([
                 'success' => true,

@@ -43,7 +43,7 @@ const Orders = () => {
         quantity: item.quantity,
         image: item.image?.src || '/placeholder.svg',
         stock_quantity: null,
-        vendorName: 'Vendor',
+        vendorName: item.vendor_name || 'Unknown Vendor',
       });
       addedCount += item.quantity;
     });

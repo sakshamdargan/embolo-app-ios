@@ -40,7 +40,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       quantity: currentQuantity,
       image: imageUrl,
       stock_quantity: stockQuantity,
-      vendorName: 'Embolo',
+      vendorName: product.store?.name || 'Unknown Vendor',
     });
 
     toast.success(`Added ${currentQuantity} ${product.name} to cart`);

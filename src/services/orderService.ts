@@ -50,6 +50,8 @@ export interface OrderLineItem {
   price: string;
   image?: { src: string } | null;
   sku: string;
+  vendor_name?: string;
+  store_name?: string;
 }
 
 export interface OrderAddress {
@@ -110,6 +112,7 @@ export interface CreateOrderData {
     key: string;
     value: string;
   }>;
+  device_type?: string;
 }
 
 export interface PaginationInfo {

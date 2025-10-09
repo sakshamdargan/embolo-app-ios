@@ -72,7 +72,22 @@ const Register: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Special handling for OTP - only allow numeric input
+    if (name === 'otp') {
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else if (name === 'phone') {
+      // Only allow numeric input for phone
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else if (name === 'postcode') {
+      // Only allow numeric input for postcode
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
     setError('');
   };
 
@@ -83,6 +98,11 @@ const Register: React.FC = () => {
   const handleSendOTP = async () => {
     if (!formData.phone.trim() || !formData.email.trim()) {
       setError('Please enter both phone number and email');
+      return;
+    }
+
+    if (formData.phone.length !== 10) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -121,15 +141,15 @@ const Register: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.phone && formData.email && formData.otp && otpSent);
+        return !!(formData.phone && formData.email && formData.otp && otpSent && formData.otp.length === 6);
       case 2:
         const basicValid = !!(formData.shop_name && formData.owner_first_name && formData.owner_last_name);
         const licenseValid = licenseData.has_license_20 || licenseData.has_license_21;
-        const license20Valid = !licenseData.has_license_20 || (licenseData.license_20_number && licenseData.license_20_expiry);
-        const license21Valid = !licenseData.has_license_21 || (licenseData.license_21_number && licenseData.license_21_expiry);
+        const license20Valid = !licenseData.has_license_20 || !!(licenseData.license_20_number?.trim() && licenseData.license_20_expiry);
+        const license21Valid = !licenseData.has_license_21 || !!(licenseData.license_21_number?.trim() && licenseData.license_21_expiry);
         return basicValid && licenseValid && license20Valid && license21Valid;
       case 3:
-        return !!(formData.address && formData.city && formData.state && formData.postcode);
+        return !!(formData.address && formData.city && formData.state && formData.postcode && formData.postcode.length === 6);
       default:
         return false;
     }
@@ -161,9 +181,19 @@ const Register: React.FC = () => {
     setError('');
 
     try {
+      // Clean and validate license data before sending
+      const cleanLicenseData = {
+        has_license_20: licenseData.has_license_20,
+        license_20_number: licenseData.has_license_20 ? licenseData.license_20_number.trim() : '',
+        license_20_expiry: licenseData.has_license_20 ? licenseData.license_20_expiry : '',
+        has_license_21: licenseData.has_license_21,
+        license_21_number: licenseData.has_license_21 ? licenseData.license_21_number.trim() : '',
+        license_21_expiry: licenseData.has_license_21 ? licenseData.license_21_expiry : ''
+      };
+
       const registrationData: RegistrationData = {
         ...formData,
-        license_data: licenseData
+        license_data: cleanLicenseData
       };
 
       const result = await register(registrationData);

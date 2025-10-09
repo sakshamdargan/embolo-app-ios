@@ -17,6 +17,7 @@ interface OrderTemplate {
     price: string;
     image: string;
     quantity: number;
+    vendorName?: string;
   }>;
   createdAt: string;
 }
@@ -140,6 +141,7 @@ const Quick = () => {
         price: p.sale_price || p.regular_price || p.price,
         image: p.images?.[0]?.src || '/placeholder.svg',
         quantity: 1,
+        vendorName: p.store?.name || 'Unknown Vendor',
       })),
       createdAt: new Date().toISOString(),
     };
@@ -168,7 +170,7 @@ const Quick = () => {
         quantity: product.quantity,
         image: product.image,
         stock_quantity: null,
-        vendorName: 'Unknown Vendor',
+        vendorName: product.vendorName || 'Unknown Vendor',
       });
     });
     toast.success(`Added ${template.products.length} items to cart from "${template.name}"`);

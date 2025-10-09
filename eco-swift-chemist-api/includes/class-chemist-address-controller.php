@@ -37,12 +37,12 @@ class Chemist_Address_Controller {
         ]);
 
         // Update address
-        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>\d+)', [
+        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>[a-zA-Z0-9_]+)', [
             'methods'             => \WP_REST_Server::EDITABLE,
             'callback'            => [$this, 'update_address'],
             'permission_callback' => [$this, 'check_auth_permission'],
             'args'                => [
-                'id'          => ['required' => true, 'type' => 'integer'],
+                'id'          => ['required' => true, 'type' => 'string'],
                 'type'        => ['required' => false, 'type' => 'string'],
                 'first_name'  => ['required' => false, 'type' => 'string'],
                 'last_name'   => ['required' => false, 'type' => 'string'],
@@ -58,22 +58,22 @@ class Chemist_Address_Controller {
         ]);
 
         // Delete address
-        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>\d+)', [
+        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>[a-zA-Z0-9_]+)', [
             'methods'             => \WP_REST_Server::DELETABLE,
             'callback'            => [$this, 'delete_address'],
             'permission_callback' => [$this, 'check_auth_permission'],
             'args'                => [
-                'id' => ['required' => true, 'type' => 'integer'],
+                'id' => ['required' => true, 'type' => 'string'],
             ],
         ]);
 
         // Set default address
-        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>\d+)/default', [
+        register_rest_route(self::NAMESPACE, '/addresses/(?P<id>[a-zA-Z0-9_]+)/default', [
             'methods'             => \WP_REST_Server::EDITABLE,
             'callback'            => [$this, 'set_default_address'],
             'permission_callback' => [$this, 'check_auth_permission'],
             'args'                => [
-                'id'   => ['required' => true, 'type' => 'integer'],
+                'id'   => ['required' => true, 'type' => 'string'],
                 'type' => ['required' => true, 'type' => 'string'], // 'billing' or 'shipping'
             ],
         ]);
