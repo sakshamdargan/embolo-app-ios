@@ -27,8 +27,23 @@ productAPI.interceptors.request.use(
 
 // Add response interceptor to handle auth errors
 productAPI.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 🔄 SLIDING SESSION: Update token if backend sent a new one
+    const newToken = response.headers['x-jwt-token'];
+    if (newToken) {
+      console.log('🔄 Token extended (product API)! Updating localStorage...');
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    return response;
+  },
   (error) => {
+    // 🔄 SLIDING SESSION: Update token even in error responses
+    if (error.response?.headers?.['x-jwt-token']) {
+      const newToken = error.response.headers['x-jwt-token'];
+      console.log('🔄 Token extended (product API)! Updating localStorage...');
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('eco_swift_token');

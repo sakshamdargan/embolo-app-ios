@@ -29,12 +29,27 @@ orderAPI.interceptors.request.use(
 orderAPI.interceptors.response.use(
   (response) => {
     console.log('✅ OrderAPI interceptor - Success response:', response.status, response.data);
+    
+    // 🔄 SLIDING SESSION: Update token if backend sent a new one
+    const newToken = response.headers['x-jwt-token'];
+    if (newToken) {
+      console.log('🔄 Token extended! Updating localStorage...');
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    
     return response;
   },
   (error) => {
     console.log('⚠️ OrderAPI interceptor - Error caught:', error);
     console.log('⚠️ OrderAPI interceptor - Response status:', error.response?.status);
     console.log('⚠️ OrderAPI interceptor - Response data:', error.response?.data);
+    
+    // 🔄 SLIDING SESSION: Update token even in error responses (if 2xx status)
+    if (error.response?.headers?.['x-jwt-token']) {
+      const newToken = error.response.headers['x-jwt-token'];
+      console.log('🔄 Token extended! Updating localStorage...');
+      localStorage.setItem('eco_swift_token', newToken);
+    }
     
     // Don't reject if it's actually a successful response (2xx status codes)
     if (error.response?.status >= 200 && error.response?.status < 300) {

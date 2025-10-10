@@ -33,6 +33,7 @@ class Settings {
     }
 
     public static function get_jwt_expire() {
-        return get_option('jwt_auth_expire', 7 * DAY_IN_SECONDS); // Default 7 days
+        //return get_option('jwt_auth_expire', 7 * DAY_IN_SECONDS); // Default 7 days
+        return 120;
     }
 }
