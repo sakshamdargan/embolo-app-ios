@@ -28,32 +28,23 @@ orderAPI.interceptors.request.use(
 // Add response interceptor to handle auth errors
 orderAPI.interceptors.response.use(
   (response) => {
-    console.log('✅ OrderAPI interceptor - Success response:', response.status, response.data);
-    
     // 🔄 SLIDING SESSION: Update token if backend sent a new one
     const newToken = response.headers['x-jwt-token'];
     if (newToken) {
-      console.log('🔄 Token extended! Updating localStorage...');
       localStorage.setItem('eco_swift_token', newToken);
     }
     
     return response;
   },
   (error) => {
-    console.log('⚠️ OrderAPI interceptor - Error caught:', error);
-    console.log('⚠️ OrderAPI interceptor - Response status:', error.response?.status);
-    console.log('⚠️ OrderAPI interceptor - Response data:', error.response?.data);
-    
     // 🔄 SLIDING SESSION: Update token even in error responses (if 2xx status)
     if (error.response?.headers?.['x-jwt-token']) {
       const newToken = error.response.headers['x-jwt-token'];
-      console.log('🔄 Token extended! Updating localStorage...');
       localStorage.setItem('eco_swift_token', newToken);
     }
     
     // Don't reject if it's actually a successful response (2xx status codes)
     if (error.response?.status >= 200 && error.response?.status < 300) {
-      console.log('✅ OrderAPI interceptor - Treating as success (2xx status)');
       return error.response;
     }
     
@@ -63,7 +54,6 @@ orderAPI.interceptors.response.use(
       localStorage.removeItem('eco_swift_user');
       window.location.href = '/login';
     }
-    console.log('❌ OrderAPI interceptor - Rejecting error');
     return Promise.reject(error);
   }
 );
@@ -174,34 +164,21 @@ class OrderService {
   // Create a new order
   async createOrder(orderData: CreateOrderData): Promise<OrderResponse> {
     try {
-      console.log('📤 Sending order creation request:', orderData);
       const response = await orderAPI.post('/orders', orderData);
-      console.log('📥 Backend response status:', response.status);
-      console.log('📥 Backend response data:', response.data);
       
       // Accept any 2xx response as success
       if (response.status >= 200 && response.status < 300) {
-        console.log('✅ Order creation successful, returning data:', response.data);
         return response.data;
       }
-      console.error('❌ Unexpected response status:', response.status);
       throw new Error('Failed to create order');
     } catch (error: any) {
-      console.error('🚨 Order creation error caught:', error);
-      console.error('🚨 Error response:', error.response);
-      console.error('🚨 Error response status:', error.response?.status);
-      console.error('🚨 Error response data:', error.response?.data);
-      console.error('🚨 Error code:', error.code);
-      
       // Check if it's a timeout error
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        console.warn('⏱️ Request timed out - Order may still be processing on server');
         throw new Error('Order is being processed. Please check your orders page in a moment.');
       }
       
       // Some servers return error object even on 2xx, so check for data
       if (error.response && error.response.status >= 200 && error.response.status < 300) {
-        console.log('✅ Found 2xx status in error, treating as success:', error.response.data);
         return error.response.data;
       }
       
@@ -364,7 +341,6 @@ class OrderService {
       const response = await this.getOrders({ per_page: limit, page: 1 });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch recent orders:', error);
       return [];
     }
   }
@@ -381,7 +357,6 @@ class OrderService {
       );
       return order || null;
     } catch (error) {
-      console.error('Failed to search order:', error);
       return null;
     }
   }

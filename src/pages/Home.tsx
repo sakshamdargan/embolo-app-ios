@@ -40,7 +40,6 @@ const Home = () => {
       // Since we're doing server-side filtering, set filtered products same as products
       setFilteredProducts(data);
     } catch (error) {
-      console.error('Error loading products:', error);
       toast.error('Failed to load products');
     } finally {
       setLoading(false);
@@ -52,7 +51,6 @@ const Home = () => {
       const data = await api.getCategories();
       setCategories(data.slice(0, 5));
     } catch (error) {
-      console.error('Error loading categories:', error);
     }
   };
 

@@ -68,9 +68,6 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
         setIsOpen(true); // Still show dropdown with "no results" message
       }
     } catch (error: any) {
-      console.error('Search error:', error);
-      console.error('Error details:', error?.response?.data || error?.message);
-      
       // Show user-friendly error
       const errorMessage = error?.response?.data?.message || error?.message || 'Search failed';
       toast.error(`Search error: ${errorMessage}`);

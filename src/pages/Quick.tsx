@@ -56,7 +56,6 @@ const Quick = () => {
         setTemplates(JSON.parse(saved));
       }
     } catch (error) {
-      console.error('Error loading templates:', error);
       toast.error('Failed to load templates');
     }
   };
@@ -74,7 +73,6 @@ const Quick = () => {
       const results = await api.searchProducts(query.trim());
       setSearchResults(results.slice(0, 20)); // Limit to 20 results
     } catch (error: any) {
-      console.error('Search error:', error);
       toast.error('Search failed. Please try again.');
       setSearchResults([]);
     } finally {

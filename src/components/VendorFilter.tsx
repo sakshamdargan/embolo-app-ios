@@ -52,7 +52,6 @@ const VendorFilter = () => {
       const data = await api.getStores();
       setVendors(data);
     } catch (error) {
-      console.error('Error loading vendors:', error);
       toast.error('Failed to load vendors');
     } finally {
       setLoading(false);

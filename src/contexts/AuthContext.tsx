@@ -50,7 +50,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setUser(completeUser || savedUser);
           } catch (error) {
             // If profile fetch fails, use cached user data
-            console.warn('Failed to fetch complete user profile, using cached data:', error);
             setUser(savedUser);
           }
         } else {
@@ -59,7 +58,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
       authService.logout();
     } finally {
       setLoading(false);

@@ -182,7 +182,6 @@ class AuthService {
       const userStr = localStorage.getItem('eco_swift_user');
       return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
-      console.error('Error parsing user data:', error);
       return null;
     }
   }
@@ -199,8 +198,7 @@ class AuthService {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      return this.getCurrentUser(); // Fallback to cached data
+      throw error;
     }
   }
 

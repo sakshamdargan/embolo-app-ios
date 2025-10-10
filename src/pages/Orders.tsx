@@ -25,7 +25,6 @@ const Orders = () => {
       const data = await api.getOrders();
       setOrders(data);
     } catch (error) {
-      console.error('Error loading orders:', error);
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);

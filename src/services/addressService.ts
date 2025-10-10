@@ -31,7 +31,6 @@ addressAPI.interceptors.response.use(
     // 🔄 SLIDING SESSION: Update token if backend sent a new one
     const newToken = response.headers['x-jwt-token'];
     if (newToken) {
-      console.log('🔄 Token extended (address API)! Updating localStorage...');
       localStorage.setItem('eco_swift_token', newToken);
     }
     return response;
@@ -40,7 +39,6 @@ addressAPI.interceptors.response.use(
     // 🔄 SLIDING SESSION: Update token even in error responses
     if (error.response?.headers?.['x-jwt-token']) {
       const newToken = error.response.headers['x-jwt-token'];
-      console.log('🔄 Token extended (address API)! Updating localStorage...');
       localStorage.setItem('eco_swift_token', newToken);
     }
     
@@ -91,7 +89,6 @@ class AddressService {
       const response = await addressAPI.get('/addresses');
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching addresses:', error);
       throw error;
     }
   }
@@ -102,7 +99,6 @@ class AddressService {
       const response = await addressAPI.post('/addresses', addressData);
       return response.data.data;
     } catch (error) {
-      console.error('Error adding address:', error);
       throw error;
     }
   }
@@ -113,7 +109,6 @@ class AddressService {
       const response = await addressAPI.put(`/addresses/${id}`, addressData);
       return response.data.data;
     } catch (error) {
-      console.error('Error updating address:', error);
       throw error;
     }
   }
@@ -123,7 +118,6 @@ class AddressService {
     try {
       await addressAPI.delete(`/addresses/${id}`);
     } catch (error) {
-      console.error('Error deleting address:', error);
       throw error;
     }
   }
@@ -133,7 +127,6 @@ class AddressService {
     try {
       await addressAPI.put(`/addresses/${id}/default`, { type });
     } catch (error) {
-      console.error('Error setting default address:', error);
       throw error;
     }
   }

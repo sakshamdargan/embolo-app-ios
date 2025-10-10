@@ -107,7 +107,8 @@ const RaiseTicket: React.FC = () => {
         toast.error('Your user account is not registered in WordPress. Please contact support.');
         setError('User account not found in WordPress system. Please contact support.');
       } else {
-        console.error('Error validating WordPress user:', err);
+        toast.error('Failed to validate user account. Please contact support.');
+        setError('Failed to validate user account. Please contact support.');
       }
       return false;
     }
@@ -143,7 +144,6 @@ const RaiseTicket: React.FC = () => {
       toast.error(response.data.message || 'Failed to create customer profile');
       return false;
     } catch (err: any) {
-      console.error('Error creating customer:', err);
       const errorMsg = err.response?.data?.message || 'Failed to create customer profile';
       toast.error(errorMsg);
       setError(errorMsg);
@@ -163,8 +163,6 @@ const RaiseTicket: React.FC = () => {
         { params: { user_id: user.id } }
       );
       
-      console.log('Tickets API Response:', response.data);
-      
       let ticketsData = [];
       if (response.data.success && response.data.data) {
         ticketsData = response.data.data;
@@ -175,10 +173,7 @@ const RaiseTicket: React.FC = () => {
       }
       
       setTickets(ticketsData);
-      console.log('Loaded tickets:', ticketsData);
     } catch (err: any) {
-      console.error('Error fetching tickets:', err);
-      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to load tickets. Please try again.');
     } finally {
       setLoading(false);
@@ -211,9 +206,7 @@ const RaiseTicket: React.FC = () => {
         }
       );
       
-      console.log('Create Ticket API Response:', response.data);
-      
-      if (response.data.success || response.data.ticket || response.data.id) {
+      if (response.data.success || (response.data as any).ticket || (response.data as any).id) {
         toast.success('Ticket created successfully!');
         setSuccess('Ticket created successfully!');
         setSubject('');
@@ -225,7 +218,6 @@ const RaiseTicket: React.FC = () => {
         toast.error(response.data.message || 'Failed to create ticket');
       }
     } catch (err: any) {
-      console.error('Error creating ticket:', err);
       const errorCode = err.response?.data?.code;
       const errorMessage = err.response?.data?.message;
 
@@ -258,8 +250,6 @@ const RaiseTicket: React.FC = () => {
         `${FLUENT_API_BASE}/ticket/${ticketId}`
       );
       
-      console.log('Ticket Details API Response:', response.data);
-      
       if (response.data.ticket) {
         const ticketWithReplies = {
           ...response.data.ticket,
@@ -267,14 +257,11 @@ const RaiseTicket: React.FC = () => {
         };
         setSelectedTicket(ticketWithReplies);
         setView('detail');
-        console.log('Loaded ticket with replies:', ticketWithReplies);
       } else {
         setError('Failed to load ticket details');
         toast.error('Failed to load ticket details');
       }
     } catch (err: any) {
-      console.error('Error fetching ticket details:', err);
-      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.message || 'Failed to load ticket details. Please try again.');
       toast.error(err.response?.data?.message || 'Failed to load ticket details');
     } finally {
@@ -307,9 +294,7 @@ const RaiseTicket: React.FC = () => {
         }
       );
       
-      console.log('Reply API Response:', response.data);
-      
-      if (response.data.success || response.data.reply || response.data.id) {
+      if (response.data.success || (response.data as any).reply || (response.data as any).id) {
         toast.success('Reply added successfully!');
         setSuccess('Reply sent successfully!');
         setReplyMessage('');
@@ -319,7 +304,6 @@ const RaiseTicket: React.FC = () => {
         toast.error(response.data.message || 'Failed to send reply');
       }
     } catch (err: any) {
-      console.error('Error replying to ticket:', err);
       const errorCode = err.response?.data?.code;
       const errorMessage = err.response?.data?.message;
 

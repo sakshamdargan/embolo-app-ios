@@ -29,7 +29,6 @@ export function decodeToken(token: string): DecodedToken | null {
     );
     return payload;
   } catch (error) {
-    console.error('Failed to decode token:', error);
     return null;
   }
 }

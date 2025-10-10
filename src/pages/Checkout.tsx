@@ -207,22 +207,17 @@ const Checkout = () => {
         device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
       };
 
-      console.log('🏁 Checkout - Submitting order data:', orderData);
       const response = await api.createOrder(orderData);
-      console.log('🏁 Checkout - Received response:', response);
-      console.log('🏁 Checkout - Response success flag:', response?.success);
-      console.log('🏁 Checkout - Response data:', response?.data);
       
       // Backend returns {success: true, data: {...}, message: '...'}
       // Check for success flag in the response
       if (response?.success === true) {
-        console.log('✅ Order creation confirmed successful');
         // Set the selected address as default billing address if it's not already
         if (selectedAddress && !selectedAddress.is_default_billing) {
           try {
             await addressService.setDefaultAddress(selectedAddress.id, 'billing');
           } catch (error) {
-            console.warn('Failed to set default billing address:', error);
+            // Silent fail for address update
           }
         }
         
@@ -230,11 +225,9 @@ const Checkout = () => {
         toast.success('Order placed successfully! Your order is now being processed.');
         navigate('/orders');
       } else {
-        console.error('❌ Response success flag is not true:', response);
         throw new Error(response?.message || 'Failed to create order');
       }
     } catch (error: any) {
-      console.error('Error creating order:', error);
       
       // Check if the error response actually contains a successful order
       const responseData = error.response?.data;
