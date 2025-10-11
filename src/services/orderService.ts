@@ -5,7 +5,7 @@ const API_BASE_URL = 'https://embolo.in/wp-json/eco-swift/v1';
 
 const orderAPI = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 60000, // Increased to 60 seconds for order creation
   headers: {
     'Content-Type': 'application/json',
   },
@@ -27,8 +27,27 @@ orderAPI.interceptors.request.use(
 
 // Add response interceptor to handle auth errors
 orderAPI.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 🔄 SLIDING SESSION: Update token if backend sent a new one
+    const newToken = response.headers['x-jwt-token'];
+    if (newToken) {
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    
+    return response;
+  },
   (error) => {
+    // 🔄 SLIDING SESSION: Update token even in error responses (if 2xx status)
+    if (error.response?.headers?.['x-jwt-token']) {
+      const newToken = error.response.headers['x-jwt-token'];
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    
+    // Don't reject if it's actually a successful response (2xx status codes)
+    if (error.response?.status >= 200 && error.response?.status < 300) {
+      return error.response;
+    }
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('eco_swift_token');
@@ -146,8 +165,23 @@ class OrderService {
   async createOrder(orderData: CreateOrderData): Promise<OrderResponse> {
     try {
       const response = await orderAPI.post('/orders', orderData);
-      return response.data;
+      
+      // Accept any 2xx response as success
+      if (response.status >= 200 && response.status < 300) {
+        return response.data;
+      }
+      throw new Error('Failed to create order');
     } catch (error: any) {
+      // Check if it's a timeout error
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        throw new Error('Order is being processed. Please check your orders page in a moment.');
+      }
+      
+      // Some servers return error object even on 2xx, so check for data
+      if (error.response && error.response.status >= 200 && error.response.status < 300) {
+        return error.response.data;
+      }
+      
       throw new Error(error.response?.data?.message || 'Failed to create order');
     }
   }
@@ -307,7 +341,6 @@ class OrderService {
       const response = await this.getOrders({ per_page: limit, page: 1 });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch recent orders:', error);
       return [];
     }
   }
@@ -324,7 +357,6 @@ class OrderService {
       );
       return order || null;
     } catch (error) {
-      console.error('Failed to search order:', error);
       return null;
     }
   }

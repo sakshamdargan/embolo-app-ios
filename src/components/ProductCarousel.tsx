@@ -1,6 +1,5 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { Product } from '@/utils/api';
+import type { Product } from '@/services/productService';
 import {
   Carousel,
   CarouselContent,

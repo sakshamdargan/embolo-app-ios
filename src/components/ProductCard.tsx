@@ -227,12 +227,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 px-1 xs:px-1.5 sm:px-2 md:px-3
                 transition-all duration-150 ease-in-out
                 touch-manipulation
-                min-w-0 shrink
+                min-w-[60px] xs:min-w-[70px] sm:min-w-[80px] md:min-w-[90px]
+                max-w-none
+                whitespace-nowrap
               "
               size="sm"
             >
               <ShoppingCart className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
-              <span className="hidden xs:inline truncate">Add</span>
+              <span className="hidden xs:inline">Add</span>
               <span className="xs:hidden">+</span>
             </Button>
           </div>

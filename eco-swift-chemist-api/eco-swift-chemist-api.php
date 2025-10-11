@@ -161,7 +161,11 @@ add_filter('determine_current_user', function ($user_id) {
 
         // Return user ID from token
         if (isset($payload->data->user->id)) {
-            return (int) $payload->data->user->id;
+            $authenticated_user_id = (int) $payload->data->user->id;
+            
+            // No sliding session - token is valid for fixed 30 days
+            
+            return $authenticated_user_id;
         }
     } catch (Exception $e) {
         return $user_id;
@@ -169,6 +173,9 @@ add_filter('determine_current_user', function ($user_id) {
 
     return $user_id;
 }, 20);
+
+// Fixed 30-day JWT token validity - no sliding session
+// Users will need to re-authenticate after 30 days
 
 // Ensure chemist role capability checks
 register_activation_hook(__FILE__, function () {

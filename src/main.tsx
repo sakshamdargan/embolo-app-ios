@@ -17,11 +17,17 @@ const initializeApp = async () => {
     } catch (error) {
       console.log('Status bar not available:', error);
     }
+  }
+};
 
-    // Hide splash screen immediately when app is ready
+// Hide splash screen after React has rendered
+const hideSplashScreen = async () => {
+  if (Capacitor.isNativePlatform()) {
     try {
+      // Small delay to ensure first paint is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
       await SplashScreen.hide({
-        fadeOutDuration: 200
+        fadeOutDuration: 300
       });
     } catch (error) {
       console.log('Splash screen not available:', error);
@@ -29,6 +35,14 @@ const initializeApp = async () => {
   }
 };
 
+// Initialize app first
 initializeApp();
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Render React app
+const root = createRoot(document.getElementById("root")!);
+root.render(<App />);
+
+// Hide splash after React has rendered
+requestAnimationFrame(() => {
+  hideSplashScreen();
+});

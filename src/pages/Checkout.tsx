@@ -156,6 +156,12 @@ const Checkout = () => {
       return;
     }
 
+    // 1. Show "calculating" animation immediately
+    const totalPrice = getTotalPrice();
+    if ((window as any).showCalculatingCashback) {
+      (window as any).showCalculatingCashback(totalPrice);
+    }
+
     try {
       setLoading(true);
 
@@ -209,36 +215,89 @@ const Checkout = () => {
 
       const response = await api.createOrder(orderData);
       
-      // Set the selected address as default billing address if it's not already
-      if (selectedAddress && !selectedAddress.is_default_billing) {
-        try {
-          await addressService.setDefaultAddress(selectedAddress.id, 'billing');
-        } catch (error) {
-          console.warn('Failed to set default billing address:', error);
-          // Don't fail the order for this
+      // Backend returns {success: true, data: {...}, message: '...'}
+      // Check for success flag in the response
+      if (response?.success === true) {
+        // Set the selected address as default billing address if it's not already
+        if (selectedAddress && !selectedAddress.is_default_billing) {
+          try {
+            await addressService.setDefaultAddress(selectedAddress.id, 'billing');
+          } catch (error) {
+            // Silent fail for address update
+          }
         }
-      }
-      
-      clearCart();
-      toast.success('Order placed successfully! Your order is now being processed.');
-      navigate('/orders');
-    } catch (error: any) {
-      console.error('Error creating order:', error);
-      
-      // Check if order was actually created despite the error
-      if (error.response?.status === 200 || error.response?.data?.success) {
+        
+        // Trigger cashback popup with order ID
+        const orderId = response.data?.id;
+        if (orderId) {
+          
+          // Try multiple methods to trigger cashback popup
+          // Method 1: Use global ref
+          const globalRef = (window as any).globalCashbackRef;
+          if (globalRef?.current) {
+            globalRef.current.triggerPopup(orderId);
+          }
+          // Method 2: Use window function
+          else if ((window as any).triggerCashbackPopup) {
+            (window as any).triggerCashbackPopup(orderId, totalPrice);
+          }
+          // Method 3: Fallback to custom event
+          else {
+            window.dispatchEvent(new CustomEvent('orderPlaced', { 
+              detail: { orderId, orderValue: totalPrice } 
+            }));
+          }
+        }
+        
         clearCart();
         toast.success('Order placed successfully! Your order is now being processed.');
-        navigate('/orders');
+        
+        // Delay navigation to allow cashback popup to show
+        setTimeout(() => {
+          navigate('/orders');
+        }, 6000);
       } else {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to place order. Please try again.';
+        throw new Error(response?.message || 'Failed to create order');
+      }
+    } catch (error: any) {
+      
+      // Check if the error response actually contains a successful order
+      const responseData = error.response?.data;
+      const isActuallySuccess = 
+        error.response?.status === 200 || 
+        responseData?.success === true ||
+        (responseData?.data && responseData.data.id);
+      
+      if (isActuallySuccess) {
+        // Trigger cashback popup with order ID
+        const orderId = responseData?.data?.id;
+        if (orderId) {
+          // Try to trigger cashback popup
+          if ((window as any).triggerCashbackPopup) {
+            (window as any).triggerCashbackPopup(orderId);
+          } else {
+            // Fallback: dispatch custom event
+            window.dispatchEvent(new CustomEvent('orderPlaced', { 
+              detail: { orderId, orderValue: getTotalPrice() } 
+            }));
+          }
+        }
+        
+        clearCart();
+        toast.success('Order placed successfully! Your order is now being processed.');
+        
+        // Delay navigation to allow cashback popup to show
+        setTimeout(() => {
+          navigate('/orders');
+        }, 6000);
+      } else {
+        const errorMessage = responseData?.message || error.message || 'Failed to place order. Please try again.';
         toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
     }
   };
-
   const renderAddressForm = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -391,30 +450,28 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="bg-card border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/')}
-              className="gap-2"
+              className="gap-1 text-xs px-2 py-1 h-8"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              <ArrowLeft className="w-3 h-3" />
+              Back
             </Button>
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/10 p-3 rounded-xl border border-primary/20">
-                <ShoppingCart className="w-6 h-6 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="bg-primary/10 p-2 rounded-lg border border-primary/20">
+                <ShoppingCart className="w-4 h-4 text-primary" />
               </div>
-              <h1 className="text-2xl font-bold">Checkout</h1>
+              <h1 className="text-lg font-bold">Checkout</h1>
             </div>
+            <div className="w-12"></div> {/* Spacer for centering */}
           </div>
-          <p className="text-muted-foreground mt-2">
-            {items.length} item{items.length !== 1 ? 's' : ''} in your cart
-          </p>
         </div>
       </div>
 
@@ -669,6 +726,7 @@ const Checkout = () => {
                 )}
               </CardContent>
             </Card>
+
           </div>
         </div>
       </div>

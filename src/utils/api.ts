@@ -80,7 +80,6 @@ export const api = {
       const response = await productService.getProducts(params);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch products:', error);
       return [];
     }
   },
@@ -97,7 +96,6 @@ export const api = {
       const response = await productService.searchProducts(params);
       return response.data;
     } catch (error: any) {
-      console.error('API Search Error:', error?.message);
       throw error;
     }
   },
@@ -107,7 +105,6 @@ export const api = {
       const response = await productService.getProduct(id);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch product:', error);
       throw error;
     }
   },
@@ -118,7 +115,6 @@ export const api = {
       const response = await productService.getCategories({ per_page: 50 });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
       return [];
     }
   },
@@ -129,7 +125,6 @@ export const api = {
       const response = await productService.getVendors({ per_page: 50 });
       return response.data;
     } catch (error) {
-      console.error('Error fetching stores:', error);
       return [];
     }
   },
@@ -139,7 +134,6 @@ export const api = {
       const response = await productService.getProducts({ vendor: storeId, per_page: 50 });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch store products:', error);
       return [];
     }
   },
@@ -148,9 +142,10 @@ export const api = {
   createOrder: async (orderData: CreateOrderData) => {
     try {
       const response = await orderService.createOrder(orderData);
-      return response.data;
+      // Backend returns {success: true, data: {...}, message: '...'}
+      // Return the full response to handle success/error properly
+      return response;
     } catch (error) {
-      console.error('Failed to create order:', error);
       throw error;
     }
   },
@@ -160,7 +155,6 @@ export const api = {
       const response = await orderService.getOrders();
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch orders:', error);
       return [];
     }
   },
@@ -170,7 +164,6 @@ export const api = {
       const response = await orderService.getOrder(id);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch order:', error);
       throw error;
     }
   },
@@ -182,7 +175,6 @@ export const api = {
       const response = await authService.login(username, otp);
       return response;
     } catch (error) {
-      console.error('Login failed:', error);
       throw error;
     }
   },
@@ -192,7 +184,6 @@ export const api = {
       const response = await authService.register(registrationData);
       return response;
     } catch (error) {
-      console.error('Registration failed:', error);
       throw error;
     }
   },
@@ -215,7 +206,6 @@ export const api = {
       const response = await productService.getFeaturedProducts(10);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch featured products:', error);
       return [];
     }
   },
@@ -225,7 +215,6 @@ export const api = {
       const response = await productService.getProductsByCategory(categoryId, { page, per_page: perPage });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch products by category:', error);
       return [];
     }
   },
@@ -235,7 +224,6 @@ export const api = {
       const response = await authService.requestLoginOTP(username);
       return response;
     } catch (error) {
-      console.error('Failed to request OTP:', error);
       throw error;
     }
   },
@@ -245,7 +233,6 @@ export const api = {
       const response = await authService.getUserProfile();
       return response;
     } catch (error) {
-      console.error('Failed to get user profile:', error);
       throw error;
     }
   },
@@ -256,7 +243,6 @@ export const api = {
       const response = await addressService.getAddresses();
       return response;
     } catch (error) {
-      console.error('Failed to get addresses:', error);
       throw error;
     }
   },
@@ -266,7 +252,6 @@ export const api = {
       const response = await addressService.addAddress(addressData);
       return response;
     } catch (error) {
-      console.error('Failed to add address:', error);
       throw error;
     }
   },
@@ -276,7 +261,6 @@ export const api = {
       const response = await addressService.updateAddress(id, addressData);
       return response;
     } catch (error) {
-      console.error('Failed to update address:', error);
       throw error;
     }
   },
@@ -286,7 +270,6 @@ export const api = {
       const response = await addressService.deleteAddress(id);
       return response;
     } catch (error) {
-      console.error('Failed to delete address:', error);
       throw error;
     }
   },
@@ -296,7 +279,6 @@ export const api = {
       const response = await addressService.setDefaultAddress(id, type);
       return response;
     } catch (error) {
-      console.error('Failed to set default address:', error);
       throw error;
     }
   },

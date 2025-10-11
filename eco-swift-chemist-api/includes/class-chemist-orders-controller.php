@@ -5,7 +5,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Chemist_Orders_Controller {
+class Chemist_Orders_Controller extends \WP_REST_Controller {
+    
     const NAMESPACE = 'eco-swift/v1';
 
     public function register_routes(): void {
@@ -58,10 +59,24 @@ class Chemist_Orders_Controller {
                 'status' => ['required' => true, 'type' => 'string'],
             ],
         ]);
+
+        // Test endpoint for debugging order creation issues
+        register_rest_route(self::NAMESPACE, '/orders/test', [
+            'methods'             => \WP_REST_Server::CREATABLE,
+            'callback'            => [$this, 'test_order_creation'],
+            'permission_callback' => [$this, 'check_auth_permission'],
+        ]);
     }
 
     public function create_order(\WP_REST_Request $request) {
         try {
+            error_log('Order creation started');
+            
+            // Ensure WooCommerce is loaded
+            if (!function_exists('wc_create_order')) {
+                return new \WP_Error('woocommerce_not_available', 'WooCommerce is not available', ['status' => 500]);
+            }
+            
             $user = $this->get_current_user($request);
             if (!$user) {
                 return new \WP_Error('unauthorized', 'Authentication required', ['status' => 401]);
@@ -70,125 +85,111 @@ class Chemist_Orders_Controller {
             $line_items = $request->get_param('line_items');
             $billing = $request->get_param('billing');
             $shipping = $request->get_param('shipping') ?: $billing;
-
-            // Validate line items
+            $device_type = $request->get_param('device_type') ?: 'mobile';
+            
+            // Validate required data
             if (empty($line_items) || !is_array($line_items)) {
                 return new \WP_Error('invalid_line_items', 'Line items are required', ['status' => 400]);
             }
+            
+            if (empty($billing) || empty($billing['email'])) {
+                return new \WP_Error('invalid_billing', 'Billing information with email is required', ['status' => 400]);
+            }
 
-            // Create WooCommerce order
+            // ============================================================
+            // STEP 1: Create Order with Complete Information
+            // ============================================================
+            
             $order = wc_create_order([
                 'customer_id' => $user->ID,
-                'status' => 'processing',
+                'status' => 'pending',
                 'created_via' => 'checkout'
             ]);
 
             if (is_wp_error($order)) {
                 return $order;
             }
+            
+            error_log('Order created with ID: ' . $order->get_id());
 
-            // Add line items
+            // ============================================================
+            // STEP 2: Set Billing & Shipping IMMEDIATELY (Before Products)
+            // ============================================================
+            
+            // Set billing address with all fields
+            $order->set_billing_first_name($billing['first_name'] ?? '');
+            $order->set_billing_last_name($billing['last_name'] ?? '');
+            $order->set_billing_company($billing['company'] ?? '');
+            $order->set_billing_address_1($billing['address_1'] ?? '');
+            $order->set_billing_address_2($billing['address_2'] ?? '');
+            $order->set_billing_city($billing['city'] ?? '');
+            $order->set_billing_state($billing['state'] ?? '');
+            $order->set_billing_postcode($billing['postcode'] ?? '');
+            $order->set_billing_country($billing['country'] ?? 'IN');
+            $order->set_billing_email($billing['email']); // Critical for customer emails
+            $order->set_billing_phone($billing['phone'] ?? '');
+            
+            // Set shipping address
+            $order->set_shipping_first_name($shipping['first_name'] ?? $billing['first_name'] ?? '');
+            $order->set_shipping_last_name($shipping['last_name'] ?? $billing['last_name'] ?? '');
+            $order->set_shipping_company($shipping['company'] ?? '');
+            $order->set_shipping_address_1($shipping['address_1'] ?? $billing['address_1'] ?? '');
+            $order->set_shipping_address_2($shipping['address_2'] ?? '');
+            $order->set_shipping_city($shipping['city'] ?? $billing['city'] ?? '');
+            $order->set_shipping_state($shipping['state'] ?? $billing['state'] ?? '');
+            $order->set_shipping_postcode($shipping['postcode'] ?? $billing['postcode'] ?? '');
+            $order->set_shipping_country($shipping['country'] ?? $billing['country'] ?? 'IN');
+
             foreach ($line_items as $item) {
                 $product_id = intval($item['product_id']);
                 $quantity = intval($item['quantity']);
                 $variation_id = isset($item['variation_id']) ? intval($item['variation_id']) : 0;
 
-                $product = wc_get_product($variation_id ?: $product_id);
-                if (!$product) {
+                if ($quantity <= 0) {
                     $order->delete(true);
-                    return new \WP_Error('invalid_product', "Product ID {$product_id} not found", ['status' => 400]);
+                    return new \WP_Error('invalid_quantity', 'Quantity must be greater than 0', ['status' => 400]);
                 }
 
-                // Check stock
-                if (!$product->is_in_stock() || ($product->get_manage_stock() && $product->get_stock_quantity() < $quantity)) {
+                $target_id = $variation_id ?: $product_id;
+                $product = wc_get_product($target_id);
+                
+                if (!$product) {
                     $order->delete(true);
-                    return new \WP_Error('insufficient_stock', "Insufficient stock for {$product->get_name()}", ['status' => 400]);
+                    return new \WP_Error('invalid_product', "Product ID {$target_id} not found", ['status' => 400]);
+                }
+
+                if (!$product->is_purchasable()) {
+                    $order->delete(true);
+                    return new \WP_Error('product_not_purchasable', "Product {$product->get_name()} is not available for purchase", ['status' => 400]);
+                }
+
+                if (!$product->is_in_stock()) {
+                    $order->delete(true);
+                    return new \WP_Error('out_of_stock', "Product {$product->get_name()} is out of stock", ['status' => 400]);
+                }
+                
+                if ($product->get_manage_stock() && $product->get_stock_quantity() < $quantity) {
+                    $order->delete(true);
+                    return new \WP_Error('insufficient_stock', "Insufficient stock for {$product->get_name()}. Available: {$product->get_stock_quantity()}, Requested: {$quantity}", ['status' => 400]);
                 }
 
                 $order->add_product($product, $quantity);
             }
 
-            // Set billing address with proper validation
-            if (!empty($billing)) {
-                $order->set_address($billing, 'billing');
-                // Ensure billing email is set for order emails
-                if (!empty($billing['email'])) {
-                    $order->set_billing_email($billing['email']);
-                }
-                if (!empty($billing['phone'])) {
-                    $order->set_billing_phone($billing['phone']);
-                }
-            }
+            // ============================================================
+            // STEP 4: Set Payment Method & Calculate Totals
+            // ============================================================
             
-            // Set shipping address
-            if (!empty($shipping)) {
-                $order->set_address($shipping, 'shipping');
-            }
-
-            // Set payment method
             $order->set_payment_method('cod');
             $order->set_payment_method_title('Cash on Delivery');
-
-            // Calculate totals
             $order->calculate_totals();
 
-            // Save order first time
-            $order->save();
-            
-            // Force update billing and shipping addresses again to ensure they're saved
-            if (!empty($billing)) {
-                $order->set_address($billing, 'billing');
-                // Set individual billing fields to ensure they're saved
-                if (isset($billing['first_name'])) $order->set_billing_first_name($billing['first_name']);
-                if (isset($billing['last_name'])) $order->set_billing_last_name($billing['last_name']);
-                if (isset($billing['email'])) $order->set_billing_email($billing['email']);
-                if (isset($billing['phone'])) $order->set_billing_phone($billing['phone']);
-                if (isset($billing['address_1'])) $order->set_billing_address_1($billing['address_1']);
-                if (isset($billing['address_2'])) $order->set_billing_address_2($billing['address_2']);
-                if (isset($billing['city'])) $order->set_billing_city($billing['city']);
-                if (isset($billing['state'])) $order->set_billing_state($billing['state']);
-                if (isset($billing['postcode'])) $order->set_billing_postcode($billing['postcode']);
-                if (isset($billing['country'])) $order->set_billing_country($billing['country']);
-            }
-            
-            if (!empty($shipping)) {
-                $order->set_address($shipping, 'shipping');
-                // Set individual shipping fields to ensure they're saved
-                if (isset($shipping['first_name'])) $order->set_shipping_first_name($shipping['first_name']);
-                if (isset($shipping['last_name'])) $order->set_shipping_last_name($shipping['last_name']);
-                if (isset($shipping['address_1'])) $order->set_shipping_address_1($shipping['address_1']);
-                if (isset($shipping['address_2'])) $order->set_shipping_address_2($shipping['address_2']);
-                if (isset($shipping['city'])) $order->set_shipping_city($shipping['city']);
-                if (isset($shipping['state'])) $order->set_shipping_state($shipping['state']);
-                if (isset($shipping['postcode'])) $order->set_shipping_postcode($shipping['postcode']);
-                if (isset($shipping['country'])) $order->set_shipping_country($shipping['country']);
-            }
-            
-            // Save again to ensure addresses are properly stored
-            $order->save();
-            
-            // Ensure customer information is properly set for emails
-            if (!empty($billing['first_name']) || !empty($billing['last_name'])) {
-                $customer_name = trim(($billing['first_name'] ?? '') . ' ' . ($billing['last_name'] ?? ''));
-                if ($customer_name) {
-                    $order->update_meta_data('_billing_full_name', $customer_name);
-                    $order->update_meta_data('_customer_display_name', $customer_name);
-                }
-            }
-
-            // Get device type from request, fallback to 'mobile'
-            $device_type = $request->get_param('device_type') ?: 'mobile';
-
-            // Set WooCommerce created_via to ensure proper origin detection
-            $order->set_created_via('checkout');
-            
             // ============================================================
-            // CRITICAL: Proper WooCommerce Attribution Setup
+            // STEP 5: Add Attribution Data
             // ============================================================
             
-            // Step 1: Build attribution data in the exact format WooCommerce expects
-            $attribution_data = array(
-                'source_type'         => 'typein',  // 'typein' = direct traffic
+            $attribution_data = [
+                'source_type'         => 'typein',
                 'referrer'            => '(direct)',
                 'utm_campaign'        => '(direct)',
                 'utm_source'          => '(direct)',
@@ -196,141 +197,77 @@ class Chemist_Orders_Controller {
                 'utm_content'         => '',
                 'utm_id'              => '',
                 'utm_term'            => '',
-                'session_entry'       => esc_url( home_url( '/' ) ),
-                'session_start_time'  => current_time( 'timestamp' ),
+                'session_entry'       => esc_url(home_url('/')),
+                'session_start_time'  => current_time('timestamp'),
                 'session_pages'       => 1,
                 'session_count'       => 1,
                 'user_agent'          => 'EcoSwift-ChemistApp/1.0',
-                'device_type'         => $device_type, // 'mobile', 'tablet', or 'desktop'
+                'device_type'         => $device_type,
                 'origin'              => 'direct',
-            );
+            ];
 
-            // Step 2: Store attribution data using WooCommerce's internal method
-            // This is the key - use update_meta_data with the exact key WC expects
-            $order->update_meta_data( '_wc_order_attribution_source_type', $attribution_data['source_type'] );
-            $order->update_meta_data( '_wc_order_attribution_referrer', $attribution_data['referrer'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_campaign', $attribution_data['utm_campaign'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_source', $attribution_data['utm_source'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_medium', $attribution_data['utm_medium'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_content', $attribution_data['utm_content'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_id', $attribution_data['utm_id'] );
-            $order->update_meta_data( '_wc_order_attribution_utm_term', $attribution_data['utm_term'] );
-            $order->update_meta_data( '_wc_order_attribution_session_entry', $attribution_data['session_entry'] );
-            $order->update_meta_data( '_wc_order_attribution_session_start_time', $attribution_data['session_start_time'] );
-            $order->update_meta_data( '_wc_order_attribution_session_pages', $attribution_data['session_pages'] );
-            $order->update_meta_data( '_wc_order_attribution_session_count', $attribution_data['session_count'] );
-            $order->update_meta_data( '_wc_order_attribution_user_agent', $attribution_data['user_agent'] );
-            $order->update_meta_data( '_wc_order_attribution_device_type', $attribution_data['device_type'] );
-            $order->update_meta_data( '_wc_order_attribution_origin', $attribution_data['origin'] );
-
-            // Step 3: Store the complete attribution array (for backward compatibility)
-            $order->update_meta_data( '_wc_order_attribution_data', $attribution_data );
-
-            // Step 4: Add custom app-specific metadata
-            $order->update_meta_data( '_order_channel', 'mobile_app' );
-            $order->update_meta_data( '_app_version', '1.0' );
-            $order->update_meta_data( '_api_created', 'yes' );
-            $order->update_meta_data( '_api_timestamp', current_time( 'mysql' ) );
-            $order->update_meta_data( '_created_via', 'checkout' );
-            $order->update_meta_data( '_order_origin', 'direct' );
-            $order->update_meta_data( '_order_source', 'web' );
-            $order->update_meta_data( '_customer_user_agent', 'EcoSwift-ChemistApp/1.0' );
-            
-            // Save metadata
-            $order->save_meta_data();
-            
-            // Final save to ensure all metadata is persisted
-            $order->save();
-            
-            // Force WooCommerce to recognize this as a direct order
-            add_filter('woocommerce_order_get_created_via', function($created_via, $order_obj) use ($order) {
-                if ($order_obj->get_id() === $order->get_id()) {
-                    return 'checkout';
-                }
-                return $created_via;
-            }, 10, 2);
-
-            // Final save to ensure all data is persisted before email triggers
-            $order->save();
-            
-            // CRITICAL: Ensure all address data is saved before triggering emails
-            // Force refresh the order object to ensure all data is loaded
-            $order = wc_get_order($order->get_id());
-            
-            // Verify and re-set billing address if needed
-            if (!empty($billing)) {
-                // Double-check billing address is properly set
-                if (empty($order->get_billing_first_name()) && !empty($billing['first_name'])) {
-                    $order->set_billing_first_name($billing['first_name']);
-                }
-                if (empty($order->get_billing_last_name()) && !empty($billing['last_name'])) {
-                    $order->set_billing_last_name($billing['last_name']);
-                }
-                if (empty($order->get_billing_email()) && !empty($billing['email'])) {
-                    $order->set_billing_email($billing['email']);
-                }
-                if (empty($order->get_billing_phone()) && !empty($billing['phone'])) {
-                    $order->set_billing_phone($billing['phone']);
-                }
-                if (empty($order->get_billing_address_1()) && !empty($billing['address_1'])) {
-                    $order->set_billing_address_1($billing['address_1']);
-                }
-                if (empty($order->get_billing_city()) && !empty($billing['city'])) {
-                    $order->set_billing_city($billing['city']);
-                }
-                if (empty($order->get_billing_state()) && !empty($billing['state'])) {
-                    $order->set_billing_state($billing['state']);
-                }
-                if (empty($order->get_billing_postcode()) && !empty($billing['postcode'])) {
-                    $order->set_billing_postcode($billing['postcode']);
-                }
-                if (empty($order->get_billing_country()) && !empty($billing['country'])) {
-                    $order->set_billing_country($billing['country']);
-                }
-                
-                // Save after setting billing fields
-                $order->save();
+            // Store individual attribution fields
+            foreach ($attribution_data as $key => $value) {
+                $order->update_meta_data('_wc_order_attribution_' . $key, $value);
             }
             
-            // Add order note with customer and shop info
-            $customer_name = get_user_meta($user->ID, 'billing_first_name', true) . ' ' . get_user_meta($user->ID, 'billing_last_name', true);
-            $shop_name = get_user_meta($user->ID, 'shop_name', true);
-            $order->add_order_note("Order created via Eco Swift Chemist App by {$customer_name} from {$shop_name}");
+            // Store complete attribution array
+            $order->update_meta_data('_wc_order_attribution_data', $attribution_data);
             
-            // IMPORTANT: Don't use update_status with email trigger here
-            // Set status without triggering emails first
-            $order->set_status('processing');
+            // Add app-specific metadata
+            $order->update_meta_data('_order_channel', 'mobile_app');
+            $order->update_meta_data('_app_version', '1.0');
+            $order->update_meta_data('_api_created', 'yes');
+            $order->update_meta_data('_api_timestamp', current_time('mysql'));
+
+            // ============================================================
+            // STEP 6: Save Order ONCE with All Data
+            // ============================================================
+            
+            $order->save();
+            error_log('Order saved with all data. Order ID: ' . $order->get_id());
+
+            // ============================================================
+            // STEP 7: Add Order Note
+            // ============================================================
+            
+            $customer_name = trim($billing['first_name'] . ' ' . $billing['last_name']);
+            $shop_name = get_user_meta($user->ID, 'shop_name', true);
+            $order->add_order_note("Order created via Eco Swift Chemist App by {$customer_name}" . 
+                                   ($shop_name ? " from {$shop_name}" : ""));
+
+            // ============================================================
+            // STEP 8: Set Status to Processing (Triggers All Emails)
+            // ============================================================
+            
+            // Setting status to 'processing' triggers both customer and admin/vendor emails
+            // WooCommerce handles this automatically - no need for manual triggering
+            $order->set_status('processing', 'Order received from mobile app');
             $order->save();
             
-            // ============================================================
-            // CRITICAL: Trigger WooCommerce Hooks for Analytics
-            // ============================================================
-            
-            // This hook is essential - it tells WooCommerce to process the order for analytics
-            do_action( 'woocommerce_new_order', $order->get_id(), $order );
-            
-            // This hook ensures attribution data is indexed for reporting
-            do_action( 'woocommerce_checkout_order_created', $order );
-            
-            // Additional hook for order processing
-            do_action( 'woocommerce_api_create_order', $order->get_id(), $order, $request );
-            
-            // ============================================================
-            // NOW Trigger Email Hooks (after all data is confirmed saved)
-            // ============================================================
-            
-            // Refresh order one more time to ensure all data is loaded for emails
-            $order = wc_get_order($order->get_id());
-            
-            // Trigger order status change to processing WITH email notification
-            $order->update_status('processing', 'Order created via Eco Swift Chemist App', true);
-            
-            // Additional email hooks for completeness
-            do_action('woocommerce_checkout_order_processed', $order->get_id(), [], $order);
-            
-            // Trigger new order email specifically
-            do_action('woocommerce_order_status_pending_to_processing', $order->get_id(), $order);
+            error_log('Order status set to processing. All emails will trigger automatically.');
 
+            // ============================================================
+            // STEP 9: Trigger Analytics Hooks (Async - Don't Wait)
+            // ============================================================
+            
+            do_action('woocommerce_new_order', $order->get_id(), $order);
+            do_action('woocommerce_checkout_order_created', $order);
+            do_action('woocommerce_api_create_order', $order->get_id(), $order, $request);
+            
+            // Trigger cashback system integration
+            error_log('Orders Controller: Firing eco_swift_order_created hook for order #' . $order->get_id());
+            do_action('eco_swift_order_created', $order->get_id(), [
+                'order' => $order,
+                'user_id' => $user->ID,
+                'order_total' => $order->get_total()
+            ]);
+            error_log('Orders Controller: eco_swift_order_created hook fired successfully for order #' . $order->get_id());
+
+            // ============================================================
+            // STEP 10: Return Success Response IMMEDIATELY
+            // ============================================================
+            
             return rest_ensure_response([
                 'success' => true,
                 'data' => $this->format_order($order),
@@ -338,9 +275,13 @@ class Chemist_Orders_Controller {
             ]);
 
         } catch (Exception $e) {
-            return new \WP_Error('order_creation_failed', $e->getMessage(), ['status' => 500]);
+            error_log('Order creation failed: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            
+            return new \WP_Error('order_creation_failed', 'Failed to create order: ' . $e->getMessage(), ['status' => 500]);
         }
     }
+
 
     public function get_orders(\WP_REST_Request $request) {
         try {
@@ -480,6 +421,40 @@ class Chemist_Orders_Controller {
                 }
             }
 
+            // Get vendor information for the product
+            $vendor_id = null;
+            $vendor_name = 'Unknown';
+            $vendor_email = '';
+            
+            if ($product) {
+                // Try to get vendor from product meta first
+                $vendor_id = get_post_meta($item->get_product_id(), '_vendor_id', true);
+                
+                // If not found in meta, try getting from product author (who created the product)
+                if (!$vendor_id) {
+                    $product_post = get_post($item->get_product_id());
+                    if ($product_post) {
+                        $vendor_id = $product_post->post_author;
+                    }
+                }
+                
+                if ($vendor_id) {
+                    $vendor_user = get_userdata($vendor_id);
+                    if ($vendor_user) {
+                        $vendor_name = $vendor_user->display_name;
+                        $vendor_email = $vendor_user->user_email;
+                        // Get shop name if available (Dokan/Vendor plugin)
+                        $shop_name = get_user_meta($vendor_id, 'dokan_store_name', true);
+                        if (!$shop_name) {
+                            $shop_name = get_user_meta($vendor_id, 'shop_name', true);
+                        }
+                        if ($shop_name) {
+                            $vendor_name = $shop_name;
+                        }
+                    }
+                }
+            }
+            
             $line_items[] = [
                 'id' => $item_id,
                 'product_id' => $item->get_product_id(),
@@ -490,7 +465,11 @@ class Chemist_Orders_Controller {
                 'total' => $item->get_total(),
                 'price' => $product ? $product->get_price() : 0,
                 'image' => $product_image ? ['src' => $product_image] : null,
-                'sku' => $product ? $product->get_sku() : ''
+                'sku' => $product ? $product->get_sku() : '',
+                'vendor_id' => $vendor_id,
+                'vendor_name' => $vendor_name,
+                'store_name' => $vendor_name, // Add store_name as alias
+                'vendor_email' => $vendor_email
             ];
         }
 
@@ -600,5 +579,65 @@ class Chemist_Orders_Controller {
             return trim(substr($header, 7));
         }
         return null;
+    }
+
+    /**
+     * Test endpoint to diagnose order creation issues
+     */
+    public function test_order_creation(\WP_REST_Request $request) {
+        $diagnostics = [];
+        
+        try {
+            // Test 1: Check WooCommerce availability
+            $diagnostics['woocommerce_loaded'] = function_exists('wc_create_order');
+            $diagnostics['wc_version'] = defined('WC_VERSION') ? WC_VERSION : 'not available';
+            
+            // Test 2: Check user authentication
+            $user = $this->get_current_user($request);
+            $diagnostics['user_authenticated'] = $user ? true : false;
+            if ($user) {
+                $diagnostics['user_id'] = $user->ID;
+                $diagnostics['user_email'] = $user->user_email;
+                $diagnostics['business_type'] = get_user_meta($user->ID, 'business_type', true);
+            }
+            
+            // Test 3: Try creating a simple WooCommerce order
+            if ($user && function_exists('wc_create_order')) {
+                $test_order = wc_create_order([
+                    'customer_id' => $user->ID,
+                    'status' => 'pending',
+                    'created_via' => 'test'
+                ]);
+                
+                if (is_wp_error($test_order)) {
+                    $diagnostics['test_order_error'] = $test_order->get_error_message();
+                } else {
+                    $diagnostics['test_order_created'] = true;
+                    $diagnostics['test_order_id'] = $test_order->get_id();
+                    // Clean up test order
+                    $test_order->delete(true);
+                    $diagnostics['test_order_cleaned'] = true;
+                }
+            }
+            
+            // Test 4: Check database connectivity
+            global $wpdb;
+            $diagnostics['database_connected'] = $wpdb->get_var("SELECT 1") === '1';
+            
+            return rest_ensure_response([
+                'success' => true,
+                'diagnostics' => $diagnostics,
+                'message' => 'Diagnostic test completed'
+            ]);
+            
+        } catch (Exception $e) {
+            $diagnostics['exception'] = $e->getMessage();
+            
+            return rest_ensure_response([
+                'success' => false,
+                'diagnostics' => $diagnostics,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

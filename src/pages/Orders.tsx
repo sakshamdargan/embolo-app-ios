@@ -25,7 +25,6 @@ const Orders = () => {
       const data = await api.getOrders();
       setOrders(data);
     } catch (error) {
-      console.error('Error loading orders:', error);
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
@@ -37,13 +36,13 @@ const Orders = () => {
     order.line_items.forEach((item) => {
       const itemPrice = parseFloat(item.total) / item.quantity;
       addItem({
-        id: item.id,
+        id: item.product_id, // Use product_id, not line item id
         name: item.name,
         price: itemPrice.toFixed(2),
         quantity: item.quantity,
         image: item.image?.src || '/placeholder.svg',
         stock_quantity: null,
-        vendorName: item.vendor_name || 'Unknown Vendor',
+        vendorName: item.vendor_name || item.store_name || 'Unknown Vendor',
       });
       addedCount += item.quantity;
     });

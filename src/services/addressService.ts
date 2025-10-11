@@ -27,8 +27,21 @@ addressAPI.interceptors.request.use(
 
 // Add response interceptor to handle auth errors
 addressAPI.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 🔄 SLIDING SESSION: Update token if backend sent a new one
+    const newToken = response.headers['x-jwt-token'];
+    if (newToken) {
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    return response;
+  },
   (error) => {
+    // 🔄 SLIDING SESSION: Update token even in error responses
+    if (error.response?.headers?.['x-jwt-token']) {
+      const newToken = error.response.headers['x-jwt-token'];
+      localStorage.setItem('eco_swift_token', newToken);
+    }
+    
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('eco_swift_token');
@@ -76,7 +89,6 @@ class AddressService {
       const response = await addressAPI.get('/addresses');
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching addresses:', error);
       throw error;
     }
   }
@@ -87,7 +99,6 @@ class AddressService {
       const response = await addressAPI.post('/addresses', addressData);
       return response.data.data;
     } catch (error) {
-      console.error('Error adding address:', error);
       throw error;
     }
   }
@@ -98,7 +109,6 @@ class AddressService {
       const response = await addressAPI.put(`/addresses/${id}`, addressData);
       return response.data.data;
     } catch (error) {
-      console.error('Error updating address:', error);
       throw error;
     }
   }
@@ -108,7 +118,6 @@ class AddressService {
     try {
       await addressAPI.delete(`/addresses/${id}`);
     } catch (error) {
-      console.error('Error deleting address:', error);
       throw error;
     }
   }
@@ -118,7 +127,6 @@ class AddressService {
     try {
       await addressAPI.put(`/addresses/${id}/default`, { type });
     } catch (error) {
-      console.error('Error setting default address:', error);
       throw error;
     }
   }
