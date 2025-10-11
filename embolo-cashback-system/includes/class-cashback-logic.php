@@ -31,14 +31,19 @@ class Cashback_Logic {
         $today = current_time('Y-m-d');
         $last_order_date = $streak_data->last_order_date;
         
+        // Debug logging
+        error_log("Embolo Cashback: User $user_id streak calculation - Current DB streak: {$streak_data->current_streak}, Last order: {$streak_data->last_order_date}, Today: $today");
+        
         // Calculate streak status
         $streak_info = self::calculate_streak_status($streak_data, $today);
+        
+        error_log("Embolo Cashback: Calculated streak info: " . print_r($streak_info, true));
         
         // Base cashback calculation
         $base_cashback = self::get_base_cashback($streak_info);
         
-        // Apply modifiers
-        $final_cashback = self::apply_modifiers($base_cashback, $order_value, $streak_info, $wallet_data);
+        // Apply modifiers (use streak_data instead of wallet_data for engagement score)
+        $final_cashback = self::apply_modifiers($base_cashback, $order_value, $streak_info, $streak_data);
         
         // Ensure within bounds
         $final_cashback = max(self::MIN_CASHBACK, min(self::MAX_CASHBACK, $final_cashback));
@@ -51,7 +56,7 @@ class Cashback_Logic {
             'order_value' => $order_value,
             'modifiers_applied' => self::get_applied_modifiers($base_cashback, $final_cashback, $order_value, $streak_info),
             'calculation_date' => $today,
-            'user_engagement_score' => $streak_data->engagement_score
+            'user_engagement_score' => isset($streak_data->engagement_score) ? (float) $streak_data->engagement_score : 5.0
         ];
         
         // Update streak data
@@ -63,7 +68,7 @@ class Cashback_Logic {
         ];
     }
     
-    private static function calculate_streak_status($streak_data, $today) {
+    public static function calculate_streak_status($streak_data, $today) {
         $last_order_date = $streak_data->last_order_date;
         $current_streak = (int) $streak_data->current_streak;
         
@@ -83,10 +88,10 @@ class Cashback_Logic {
         $days_diff = $today_date->diff($last_date)->days;
         
         if ($days_diff === 0) {
-            // Same day order
+            // Same day order - maintain current streak, no increment
             return [
                 'type' => 'same_day',
-                'current_streak' => $current_streak,
+                'current_streak' => max(1, $current_streak), // Ensure at least 1
                 'is_consecutive' => true,
                 'days_since_last' => 0,
                 'is_comeback' => false
@@ -165,7 +170,7 @@ class Cashback_Logic {
         }
     }
     
-    private static function apply_modifiers($base_cashback, $order_value, $streak_info, $wallet_data) {
+    private static function apply_modifiers($base_cashback, $order_value, $streak_info, $streak_data) {
         $final_cashback = $base_cashback;
         
         // Order value modifier (bonus for high-value orders)
@@ -175,8 +180,8 @@ class Cashback_Logic {
             $final_cashback += rand(2, 8); // Medium-value bonus
         }
         
-        // Engagement score modifier
-        $engagement_score = (float) $wallet_data->engagement_score ?? 5.0;
+        // Engagement score modifier (get from streak data parameter)
+        $engagement_score = isset($streak_data->engagement_score) ? (float) $streak_data->engagement_score : 5.0;
         if ($engagement_score >= 8.0) {
             $final_cashback += rand(3, 8); // High engagement bonus
         } elseif ($engagement_score >= 6.0) {
@@ -241,8 +246,8 @@ class Cashback_Logic {
             $update_data['total_breaks'] = $current_streak_data->total_breaks + 1;
         }
         
-        // Set comeback bonus eligibility
-        $update_data['comeback_bonus_eligible'] = $streak_info['is_comeback'] ? 0 : 1;
+        // Set comeback bonus eligibility (temporarily commented out for debugging)
+        // $update_data['comeback_bonus_eligible'] = $streak_info['is_comeback'] ? 0 : 1;
         
         Database::update_user_streak($user_id, $update_data);
     }
@@ -268,23 +273,42 @@ class Cashback_Logic {
     }
     
     public static function get_cashback_preview($user_id, $order_value = 0) {
-        // Get preview without updating any data
-        $streak_data = Database::get_or_create_streak($user_id);
-        $wallet_data = Database::get_or_create_wallet($user_id);
-        
-        $today = current_time('Y-m-d');
-        $streak_info = self::calculate_streak_status($streak_data, $today);
-        
-        $base_cashback = self::get_base_cashback($streak_info);
-        $final_cashback = self::apply_modifiers($base_cashback, $order_value, $streak_info, $wallet_data);
-        
-        // Ensure within bounds
-        $final_cashback = max(self::MIN_CASHBACK, min(self::MAX_CASHBACK, $final_cashback));
-        
-        return [
-            'estimated_amount' => round($final_cashback, 2),
-            'streak_info' => $streak_info,
-            'is_preview' => true
-        ];
+        try {
+            error_log("Embolo Cashback Preview: Starting for user $user_id, order_value $order_value");
+            
+            // Get preview without updating any data
+            $streak_data = Database::get_or_create_streak($user_id);
+            error_log("Embolo Cashback Preview: Got streak data - " . print_r($streak_data, true));
+            
+            $wallet_data = Database::get_or_create_wallet($user_id);
+            error_log("Embolo Cashback Preview: Got wallet data - " . print_r($wallet_data, true));
+            
+            $today = current_time('Y-m-d');
+            error_log("Embolo Cashback Preview: Today is $today");
+            
+            $streak_info = self::calculate_streak_status($streak_data, $today);
+            error_log("Embolo Cashback Preview: Calculated streak info - " . print_r($streak_info, true));
+            
+            $base_cashback = self::get_base_cashback($streak_info);
+            error_log("Embolo Cashback Preview: Base cashback is $base_cashback");
+            
+            $final_cashback = self::apply_modifiers($base_cashback, $order_value, $streak_info, $streak_data);
+            error_log("Embolo Cashback Preview: Final cashback is $final_cashback");
+            
+            // Ensure within bounds
+            $final_cashback = max(self::MIN_CASHBACK, min(self::MAX_CASHBACK, $final_cashback));
+            
+            error_log("Embolo Cashback Preview: Bounded final cashback is $final_cashback");
+            
+            return [
+                'estimated_amount' => round($final_cashback, 2),
+                'streak_info' => $streak_info,
+                'is_preview' => true
+            ];
+        } catch (\Exception $e) {
+            error_log("Embolo Cashback Preview Error: " . $e->getMessage());
+            error_log("Embolo Cashback Preview Stack Trace: " . $e->getTraceAsString());
+            throw $e;
+        }
     }
 }

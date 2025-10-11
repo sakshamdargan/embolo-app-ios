@@ -28,26 +28,17 @@ cashbackAPI.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle token refresh and auth errors
+// Add response interceptor to handle auth errors
 cashbackAPI.interceptors.response.use(
   (response) => {
-    // 🔄 SLIDING SESSION: Update token if backend sent a new one
-    const newToken = response.headers['x-jwt-token'];
-    if (newToken) {
-      localStorage.setItem('eco_swift_token', newToken);
-    }
+    // No sliding session - JWT token is valid for fixed 30 days
     return response;
   },
   (error) => {
-    // 🔄 SLIDING SESSION: Update token even in error responses
-    if (error.response?.headers?.['x-jwt-token']) {
-      const newToken = error.response.headers['x-jwt-token'];
-      localStorage.setItem('eco_swift_token', newToken);
-    }
-    
-    if (error.response?.status === 401) {
-      // Token expired or invalid - but don't redirect, let the caller handle it
-      console.error('Cashback API authentication failed');
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // Token expired or invalid - user needs to re-authenticate
+      console.error('Cashback API authentication failed - token expired or invalid');
+      console.error('User will need to log in again after 30 days');
     }
     
     return Promise.reject(error);

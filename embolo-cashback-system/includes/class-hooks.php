@@ -27,22 +27,30 @@ class Hooks {
     }
     
     public function process_order_cashback($order_id) {
+        error_log('Embolo Cashback: process_order_cashback called for order #' . $order_id);
+        
         if (!$order_id) {
+            error_log('Embolo Cashback: No order ID provided');
             return;
         }
         
         $order = wc_get_order($order_id);
         if (!$order) {
+            error_log('Embolo Cashback: Order #' . $order_id . ' not found');
             return;
         }
         
         $user_id = $order->get_customer_id();
         if (!$user_id) {
+            error_log('Embolo Cashback: Order #' . $order_id . ' has no customer ID');
             return;
         }
         
+        error_log('Embolo Cashback: Processing for order #' . $order_id . ', user #' . $user_id);
+        
         // Check if cashback is enabled
         if (get_option('embolo_cashback_enabled', 'yes') !== 'yes') {
+            error_log('Embolo Cashback: Cashback system is disabled');
             return;
         }
         
@@ -56,15 +64,18 @@ class Hooks {
         ));
         
         if ($existing) {
+            error_log('Embolo Cashback: Order #' . $order_id . ' already has cashback (ID: ' . $existing . ')');
             return; // Already processed
         }
         
+        error_log('Embolo Cashback: Creating new cashback for order #' . $order_id);
         // Process cashback
         $this->create_cashback_for_order($order);
     }
     
     public function process_order_cashback_immediate($order_id, $order_data = null) {
         // This is called immediately when eco-swift creates an order
+        error_log('Embolo Cashback: eco_swift_order_created hook fired for order #' . $order_id);
         $this->process_order_cashback($order_id);
     }
     
@@ -75,9 +86,12 @@ class Hooks {
             $order_total = (float) $order->get_total();
             
             // Calculate cashback
+            error_log('Embolo Cashback: Calculating cashback for user #' . $user_id . ', order total: ₹' . $order_total);
             $cashback_result = Cashback_Logic::calculate_cashback($user_id, $order_total);
+            error_log('Embolo Cashback: Calculated cashback result: ' . print_r($cashback_result, true));
             
             // Create cashback entry
+            error_log('Embolo Cashback: Creating cashback entry - Amount: ₹' . $cashback_result['amount']);
             $cashback_id = Wallet_Manager::add_cashback(
                 $user_id,
                 $cashback_result['amount'],
@@ -86,6 +100,7 @@ class Hooks {
             );
             
             if ($cashback_id) {
+                error_log('Embolo Cashback: Cashback entry created successfully with ID: ' . $cashback_id);
                 // Add order note
                 $order->add_order_note(
                     sprintf(

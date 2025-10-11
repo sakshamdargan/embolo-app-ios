@@ -254,6 +254,15 @@ class Chemist_Orders_Controller extends \WP_REST_Controller {
             do_action('woocommerce_new_order', $order->get_id(), $order);
             do_action('woocommerce_checkout_order_created', $order);
             do_action('woocommerce_api_create_order', $order->get_id(), $order, $request);
+            
+            // Trigger cashback system integration
+            error_log('Orders Controller: Firing eco_swift_order_created hook for order #' . $order->get_id());
+            do_action('eco_swift_order_created', $order->get_id(), [
+                'order' => $order,
+                'user_id' => $user->ID,
+                'order_total' => $order->get_total()
+            ]);
+            error_log('Orders Controller: eco_swift_order_created hook fired successfully for order #' . $order->get_id());
 
             // ============================================================
             // STEP 10: Return Success Response IMMEDIATELY

@@ -163,9 +163,7 @@ add_filter('determine_current_user', function ($user_id) {
         if (isset($payload->data->user->id)) {
             $authenticated_user_id = (int) $payload->data->user->id;
             
-            // Store the original token for sliding session extension
-            global $eco_swift_original_token;
-            $eco_swift_original_token = $token;
+            // No sliding session - token is valid for fixed 30 days
             
             return $authenticated_user_id;
         }
@@ -176,29 +174,8 @@ add_filter('determine_current_user', function ($user_id) {
     return $user_id;
 }, 20);
 
-// 🔄 SLIDING SESSION: Extend token expiration on every API request
-add_filter('rest_pre_serve_request', function ($served, $result, $request, $server) {
-    global $eco_swift_original_token;
-    
-    // Only extend token if user was authenticated via JWT
-    if (!$eco_swift_original_token) {
-        return $served;
-    }
-    
-    // Get current user from token
-    $user = \EcoSwift\ChemistApi\Token_Service::get_user_from_token($eco_swift_original_token);
-    if (!$user) {
-        return $served;
-    }
-    
-    // Generate new token with extended expiration (7 more days from now)
-    $new_token = \EcoSwift\ChemistApi\Token_Service::generate_token($user);
-    
-    // Add new token to response header
-    header('X-JWT-Token: ' . $new_token);
-    
-    return $served;
-}, 10, 4);
+// Fixed 30-day JWT token validity - no sliding session
+// Users will need to re-authenticate after 30 days
 
 // Ensure chemist role capability checks
 register_activation_hook(__FILE__, function () {

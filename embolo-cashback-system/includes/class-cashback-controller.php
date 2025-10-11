@@ -35,7 +35,7 @@ class Cashback_Controller extends \WP_REST_Controller {
                     'required' => false,
                     'type' => 'number',
                     'default' => 0,
-                    'sanitize_callback' => 'floatval',
+                    'sanitize_callback' => function($value) { return (float) $value; },
                 ],
             ],
         ]);
@@ -81,7 +81,7 @@ class Cashback_Controller extends \WP_REST_Controller {
                     'required' => false,
                     'type' => 'number',
                     'default' => 0,
-                    'sanitize_callback' => 'floatval',
+                    'sanitize_callback' => function($value) { return (float) $value; },
                 ],
             ],
         ]);
@@ -91,6 +91,20 @@ class Cashback_Controller extends \WP_REST_Controller {
             'methods' => \WP_REST_Server::READABLE,
             'callback' => [$this, 'test_plugin'],
             'permission_callback' => '__return_true', // No authentication required
+        ]);
+        
+        // Debug endpoint to fix database issues
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/fix-db', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'fix_database'],
+            'permission_callback' => [$this, 'check_authentication'],
+        ]);
+        
+        // Debug endpoint to check streak status
+        register_rest_route($this->namespace, '/' . $this->rest_base . '/debug-streak', [
+            'methods' => \WP_REST_Server::READABLE,
+            'callback' => [$this, 'debug_streak'],
+            'permission_callback' => [$this, 'check_authentication'],
         ]);
     }
     
@@ -160,17 +174,8 @@ class Cashback_Controller extends \WP_REST_Controller {
         // Set current user for the request
         \wp_set_current_user($user->ID);
         
-        // Sliding session: Generate a new token for the response
-        $new_token = \EcoSwift\ChemistApi\Token_Service::generate_token($user);
-        if ($new_token) {
-            // We'll set this in the response header later via a filter
-            \add_filter('rest_post_dispatch', function($response, $handler, $request) use ($new_token) {
-                if ($response instanceof \WP_REST_Response) {
-                    $response->header('X-JWT-Token', $new_token);
-                }
-                return $response;
-            }, 10, 3);
-        }
+        // No sliding session - JWT token is valid for fixed 30 days
+        // User will need to re-authenticate after token expires
         
         return true;
     }
@@ -187,16 +192,80 @@ class Cashback_Controller extends \WP_REST_Controller {
     
     public function test_plugin($request) {
         return rest_ensure_response([
-            'success' => true,
-            'message' => 'Embolo Cashback Plugin is loaded and working!',
-            'plugin_version' => EMBOLO_CASHBACK_VERSION,
+            'status' => 'success',
+            'message' => 'Embolo Cashback System is loaded and working.',
+            'version' => '1.0.0',
             'timestamp' => current_time('mysql'),
-            'classes_loaded' => [
-                'Cashback_Logic' => class_exists('Embolo\Cashback\Cashback_Logic'),
-                'Database' => class_exists('Embolo\Cashback\Database'),
-                'Wallet_Manager' => class_exists('Embolo\Cashback\Wallet_Manager'),
-                'Token_Service' => class_exists('EcoSwift\ChemistApi\Token_Service'),
-            ]
+        ]);
+    }
+    
+    public function fix_database($request) {
+        global $wpdb;
+        
+        $streaks_table = $wpdb->prefix . 'embolo_user_streaks';
+        
+        // Check if comeback_bonus_eligible column exists
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM $streaks_table LIKE 'comeback_bonus_eligible'");
+        
+        $messages = [];
+        
+        if (empty($columns)) {
+            // Add the missing column
+            $result = $wpdb->query("ALTER TABLE $streaks_table ADD COLUMN comeback_bonus_eligible tinyint(1) NOT NULL DEFAULT 1");
+            if ($result !== false) {
+                $messages[] = "Added missing comeback_bonus_eligible column";
+            } else {
+                $messages[] = "Failed to add comeback_bonus_eligible column: " . $wpdb->last_error;
+            }
+        } else {
+            $messages[] = "comeback_bonus_eligible column already exists";
+        }
+        
+        // Check and fix engagement_score default
+        $engagement_columns = $wpdb->get_results("SHOW COLUMNS FROM $streaks_table LIKE 'engagement_score'");
+        if (!empty($engagement_columns)) {
+            $column = $engagement_columns[0];
+            if ($column->Default === null || $column->Default == '0.0') {
+                $result = $wpdb->query("ALTER TABLE $streaks_table MODIFY COLUMN engagement_score decimal(3,1) NOT NULL DEFAULT 5.0");
+                if ($result !== false) {
+                    $messages[] = "Updated engagement_score default value to 5.0";
+                } else {
+                    $messages[] = "Failed to update engagement_score default: " . $wpdb->last_error;
+                }
+            } else {
+                $messages[] = "engagement_score default is correct: " . $column->Default;
+            }
+        }
+        
+        // Update existing null engagement_scores
+        $updated = $wpdb->query("UPDATE $streaks_table SET engagement_score = 5.0 WHERE engagement_score IS NULL OR engagement_score = 0.0");
+        if ($updated !== false) {
+            $messages[] = "Updated $updated existing records with null/zero engagement_score";
+        }
+        
+        return rest_ensure_response([
+            'status' => 'success',
+            'messages' => $messages,
+            'timestamp' => current_time('mysql'),
+        ]);
+    }
+    
+    public function debug_streak($request) {
+        $user_id = get_current_user_id();
+        
+        $streak_data = Database::get_or_create_streak($user_id);
+        $today = current_time('Y-m-d');
+        
+        // Calculate what the streak should be
+        $streak_info = Cashback_Logic::calculate_streak_status($streak_data, $today);
+        
+        return rest_ensure_response([
+            'status' => 'success',
+            'user_id' => $user_id,
+            'current_streak_data' => $streak_data,
+            'calculated_streak_info' => $streak_info,
+            'today' => $today,
+            'timestamp' => current_time('mysql'),
         ]);
     }
     

@@ -77,6 +77,9 @@ class Database {
         dbDelta($wallet_sql);
         dbDelta($streaks_sql);
         
+        // Check and add missing columns
+        self::check_and_add_missing_columns();
+        
         // Add version option
         add_option('embolo_cashback_db_version', '1.0.0');
     }
@@ -255,5 +258,30 @@ class Database {
             null,
             ['%d']
         );
+    }
+    
+    private static function check_and_add_missing_columns() {
+        global $wpdb;
+        
+        $streaks_table = $wpdb->prefix . 'embolo_user_streaks';
+        
+        // Check if comeback_bonus_eligible column exists
+        $columns = $wpdb->get_results("SHOW COLUMNS FROM $streaks_table LIKE 'comeback_bonus_eligible'");
+        
+        if (empty($columns)) {
+            // Add the missing column
+            $wpdb->query("ALTER TABLE $streaks_table ADD COLUMN comeback_bonus_eligible tinyint(1) NOT NULL DEFAULT 1");
+            error_log("Embolo Cashback: Added missing comeback_bonus_eligible column to $streaks_table");
+        }
+        
+        // Check if engagement_score column has correct default
+        $engagement_columns = $wpdb->get_results("SHOW COLUMNS FROM $streaks_table LIKE 'engagement_score'");
+        if (!empty($engagement_columns)) {
+            $column = $engagement_columns[0];
+            if ($column->Default === null || $column->Default == '0.0') {
+                $wpdb->query("ALTER TABLE $streaks_table MODIFY COLUMN engagement_score decimal(3,1) NOT NULL DEFAULT 5.0");
+                error_log("Embolo Cashback: Updated engagement_score default value to 5.0");
+            }
+        }
     }
 }

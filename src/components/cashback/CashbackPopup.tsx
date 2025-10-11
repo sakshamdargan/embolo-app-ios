@@ -26,7 +26,7 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
   const [state, setState] = useState<PopupState>('calculating');
   const [cashbackAmount, setCashbackAmount] = useState<number>(0);
   const [progress, setProgress] = useState(0);
-  const { getCashbackPreview, processCashback, loading } = useCashback();
+  const { getCashbackPreview, getOrderCashback, loading } = useCashback();
 
   // Debug logging
   useEffect(() => {
@@ -62,12 +62,41 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
   // Handle cashback calculation
   useEffect(() => {
     if (isOpen && orderId) {
-      // Process actual cashback for completed order
-      const processOrderCashback = async () => {
+      // Fetch cashback that was created automatically by backend
+      const fetchOrderCashback = async () => {
         try {
-          console.log('Processing cashback for order:', orderId, 'with value:', orderValue);
-          const result = await processCashback(orderId, orderValue);
-          console.log('Cashback result:', result);
+          console.log('Fetching cashback for order:', orderId);
+          
+          // Retry mechanism: Try up to 5 times with increasing delays
+          const maxRetries = 5;
+          let retryCount = 0;
+          let result = null;
+          
+          while (retryCount < maxRetries && !result) {
+            retryCount++;
+            const delay = retryCount * 1000; // 1s, 2s, 3s, 4s, 5s
+            
+            console.log(`Attempt ${retryCount}/${maxRetries} - waiting ${delay}ms before fetching...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            try {
+              result = await getOrderCashback(orderId);
+              if (result && result.amount > 0) {
+                console.log('Cashback found:', result);
+                break;
+              } else {
+                console.log(`Attempt ${retryCount}: Cashback not ready yet, will retry...`);
+                result = null;
+              }
+            } catch (error: any) {
+              if (error.response?.status === 404) {
+                console.log(`Attempt ${retryCount}: Cashback not found (404), will retry...`);
+                result = null;
+              } else {
+                throw error; // Other errors should be thrown
+              }
+            }
+          }
           
           if (result && result.amount > 0) {
             setCashbackAmount(result.amount);
@@ -76,18 +105,18 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
               setState('success');
               triggerConfetti();
               onOrderSuccess?.();
-            }, 1000);
+            }, 500);
           } else {
-            console.error('Invalid cashback result:', result);
+            console.error('Cashback not found after all retries');
             setState('error');
           }
         } catch (error) {
-          console.error('Cashback processing failed:', error);
+          console.error('Cashback fetch failed:', error);
           setState('error');
         }
       };
 
-      processOrderCashback();
+      fetchOrderCashback();
     } else if (isOpen && orderValue >= 0) {
       // Show preview for order value
       const getPreview = async () => {
@@ -115,7 +144,7 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
 
       getPreview();
     }
-  }, [isOpen, orderId, orderValue, processCashback, getCashbackPreview, onOrderSuccess]);
+  }, [isOpen, orderId, orderValue, getOrderCashback, getCashbackPreview, onOrderSuccess]);
 
   const triggerConfetti = () => {
     // Trigger confetti animation
