@@ -15,16 +15,31 @@ import Assistance from "./pages/Assistance";
 import User from "./pages/User";
 import AboutUs from "./pages/AboutUs";
 import Updates from "./pages/Updates";
+import Wallet from "./pages/Wallet";
 import Navbar from "./components/Navbar";
 import Layout from "./components/Layout";
 import Header from "./components/Header";
 import NotFound from "./pages/NotFound";
+import CashbackIntegration, { CashbackIntegrationRef } from "./components/cashback/CashbackIntegration";
+import { useRef, useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   // 🔄 SLIDING SESSION: Token automatically extends on every API call (see service interceptors)
   // No background refresh needed!
+  
+  const globalCashbackRef = useRef<CashbackIntegrationRef>(null);
+
+  // Expose global cashback trigger function
+  useEffect(() => {
+    (window as any).globalCashbackRef = globalCashbackRef;
+    console.log('Global cashback ref exposed to window');
+    
+    return () => {
+      delete (window as any).globalCashbackRef;
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -53,6 +68,7 @@ const App = () => {
                         <Route path="/" element={<Home />} />
                         <Route path="/checkout" element={<Checkout />} />
                         <Route path="/orders" element={<Orders />} />
+                        <Route path="/wallet" element={<Wallet />} />
                         <Route path="/quick" element={<Quick />} />
                         <Route path="/assistance" element={<Assistance />} />
                         <Route path="/user" element={<User />} />
@@ -66,6 +82,13 @@ const App = () => {
                 </ProtectedRoute>
               } />
             </Routes>
+            
+            {/* Global Cashback Integration - Persists across all pages */}
+            <CashbackIntegration 
+              ref={globalCashbackRef}
+              orderValue={0}
+              showPreview={false}
+            />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

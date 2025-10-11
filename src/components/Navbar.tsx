@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Zap, MessageCircle, Package, ShoppingCart } from 'lucide-react';
+import { Home, Zap, MessageCircle, Package, ShoppingCart, Wallet } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { Badge } from '@/components/ui/badge';
 
@@ -15,6 +15,7 @@ const Navbar = () => {
     { path: '/quick', icon: Zap, label: 'Quick' },
     { path: '/assistance', icon: MessageCircle, label: 'Assistance' },
     { path: '/orders', icon: Package, label: 'Orders' },
+    { path: '/wallet', icon: Wallet, label: 'Wallet' },
   ];
 
   // Don't render navbar on checkout page
