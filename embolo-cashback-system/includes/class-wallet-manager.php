@@ -181,7 +181,7 @@ class Wallet_Manager {
                      updated_at = %s
                  WHERE user_id = %d",
                 $cashback->cashback_amount,
-                current_time('mysql'),
+                date('Y-m-d H:i:s'),
                 $cashback->user_id
             ));
         }
@@ -194,6 +194,9 @@ class Wallet_Manager {
         );
         
         if ($deleted) {
+            // Cleanup streak data if all cashbacks for user are deleted
+            self::cleanup_user_data_after_cashback_deletion($cashback->user_id);
+            
             // Trigger action for other plugins
             do_action('embolo_cashback_deleted', $cashback_id, $cashback);
         }
@@ -209,6 +212,191 @@ class Wallet_Manager {
         }
         
         return $results;
+    }
+    
+    private static function cleanup_user_data_after_cashback_deletion($user_id) {
+        global $wpdb;
+        
+        $cashback_table = $wpdb->prefix . 'embolo_cashback';
+        $streaks_table = $wpdb->prefix . 'embolo_user_streaks';
+        $wallets_table = $wpdb->prefix . 'embolo_wallets';
+        
+        // Check if user has any remaining cashback entries
+        $remaining_cashbacks = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $cashback_table WHERE user_id = %d",
+            $user_id
+        ));
+        
+    // ...existing code...
+        
+        if ($remaining_cashbacks == 0) {
+            // No cashbacks left - reset user streak and wallet data
+            // ...existing code...
+            
+            // Reset streak data
+            $wpdb->update(
+                $streaks_table,
+                [
+                    'current_streak' => 0,
+                    'longest_streak' => 0,
+                    'last_order_date' => null,
+                    'streak_start_date' => null,
+                    'engagement_score' => 5.0,
+                    'total_breaks' => 0,
+                    'comeback_bonus_eligible' => 1,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ],
+                ['user_id' => $user_id],
+                [
+                    '%d', // current_streak
+                    '%d', // longest_streak
+                    '%s', // last_order_date
+                    '%s', // streak_start_date
+                    '%f', // engagement_score
+                    '%d', // total_breaks
+                    '%d', // comeback_bonus_eligible
+                    '%s'  // updated_at
+                ],
+                ['%d']
+            );
+            
+            // Reset wallet data
+            $wpdb->update(
+                $wallets_table,
+                [
+                    'total_balance' => 0.00,
+                    'lifetime_earned' => 0.00,
+                    'total_orders' => 0,
+                    'last_order_date' => null,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ],
+                ['user_id' => $user_id],
+                [
+                    '%f', // total_balance
+                    '%f', // lifetime_earned
+                    '%d', // total_orders
+                    '%s', // last_order_date
+                    '%s'  // updated_at
+                ],
+                ['%d']
+            );
+            
+            // ...existing code...
+        } else {
+            // Recalculate streak based on remaining cashback entries
+            self::recalculate_user_streak_from_remaining_cashbacks($user_id);
+        }
+    }
+    
+    private static function recalculate_user_streak_from_remaining_cashbacks($user_id) {
+        global $wpdb;
+        
+        $cashback_table = $wpdb->prefix . 'embolo_cashback';
+        $streaks_table = $wpdb->prefix . 'embolo_user_streaks';
+        $wallets_table = $wpdb->prefix . 'embolo_wallets';
+        
+        // Get all remaining cashback entries ordered by creation date
+        $remaining_cashbacks = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $cashback_table 
+             WHERE user_id = %d 
+             ORDER BY created_at ASC",
+            $user_id
+        ));
+        
+        if (empty($remaining_cashbacks)) {
+            return;
+        }
+        
+    // ...existing code...
+        
+        // Recalculate totals
+        $total_completed_amount = 0;
+        $total_orders = 0;
+        $last_cashback_date = null;
+        
+        // Get unique order dates for streak calculation
+        $order_dates = [];
+        
+        foreach ($remaining_cashbacks as $cashback) {
+            if ($cashback->status === 'completed') {
+                $total_completed_amount += (float) $cashback->cashback_amount;
+            }
+            
+            $total_orders++;
+            $cashback_date = date('Y-m-d', strtotime($cashback->created_at));
+            $order_dates[$cashback_date] = true;
+            $last_cashback_date = $cashback->created_at;
+        }
+        
+        // Calculate current streak based on consecutive days
+        $unique_dates = array_keys($order_dates);
+        sort($unique_dates);
+        
+        $current_streak = 1;
+        $longest_streak = 1;
+        $temp_streak = 1;
+        
+        for ($i = 1; $i < count($unique_dates); $i++) {
+            $prev_date = new \DateTime($unique_dates[$i-1]);
+            $curr_date = new \DateTime($unique_dates[$i]);
+            $diff = $curr_date->diff($prev_date)->days;
+            
+            if ($diff === 1) {
+                $temp_streak++;
+            } else {
+                $longest_streak = max($longest_streak, $temp_streak);
+                $temp_streak = 1;
+            }
+        }
+        
+        $current_streak = $temp_streak;
+        $longest_streak = max($longest_streak, $temp_streak);
+        
+        // Update streak data
+        $wpdb->update(
+            $streaks_table,
+            [
+                'current_streak' => $current_streak,
+                'longest_streak' => $longest_streak,
+                'last_order_date' => date('Y-m-d', strtotime($last_cashback_date)),
+                'streak_start_date' => $unique_dates[0],
+                'engagement_score' => min(10.0, 5.0 + ($current_streak * 0.1)), // Recalculate engagement
+                'updated_at' => date('Y-m-d H:i:s')
+            ],
+            ['user_id' => $user_id],
+            [
+                '%d', // current_streak
+                '%d', // longest_streak
+                '%s', // last_order_date
+                '%s', // streak_start_date
+                '%f', // engagement_score
+                '%s'  // updated_at
+            ],
+            ['%d']
+        );
+        
+        // Update wallet totals
+        $wpdb->update(
+            $wallets_table,
+            [
+                'total_balance' => $total_completed_amount,
+                'lifetime_earned' => $total_completed_amount,
+                'total_orders' => $total_orders,
+                'last_order_date' => $last_cashback_date,
+                'updated_at' => date('Y-m-d H:i:s')
+            ],
+            ['user_id' => $user_id],
+            [
+                '%f', // total_balance
+                '%f', // lifetime_earned
+                '%d', // total_orders
+                '%s', // last_order_date
+                '%s'  // updated_at
+            ],
+            ['%d']
+        );
+        
+    // ...existing code...
     }
     
     private static function update_order_count($user_id) {
@@ -232,8 +420,8 @@ class Wallet_Manager {
             $wallet_table,
             [
                 'total_orders' => $order_count,
-                'last_order_date' => current_time('mysql'),
-                'updated_at' => current_time('mysql')
+                'last_order_date' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
             ],
             ['user_id' => $user_id],
             ['%d', '%s', '%s'],

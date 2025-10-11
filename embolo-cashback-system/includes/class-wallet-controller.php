@@ -293,22 +293,32 @@ class Wallet_Controller extends \WP_REST_Controller {
     }
     
     private function calculate_streak_milestones($current_streak) {
+        // Use actual rewards from cashback logic instead of hardcoded values
         $milestones = [
             ['days' => 5, 'reward' => '₹60', 'title' => 'Loyalty Bonus'],
-            ['days' => 7, 'reward' => '₹45', 'title' => 'Weekly Warrior'],
-            ['days' => 14, 'reward' => '₹55', 'title' => 'Fortnight Champion'],
-            ['days' => 30, 'reward' => '₹60', 'title' => 'Monthly Master'],
+            ['days' => 7, 'reward' => '₹45', 'title' => 'Weekly Warrior'], 
+            ['days' => 14, 'reward' => '₹50-60', 'title' => 'Fortnight Champion'],
+            ['days' => 30, 'reward' => '₹45-60', 'title' => 'Monthly Master'],
             ['days' => 50, 'reward' => '₹60+', 'title' => 'Ultra Loyalty'],
         ];
         
         $result = [];
         foreach ($milestones as $milestone) {
+            // If user hasn't achieved this milestone yet, show it as a goal
+            $achieved = $current_streak >= $milestone['days'];
+            
+            // For unachieved milestones, show as "Next Goal" if it's the next achievable one
+            $is_next_goal = !$achieved && ($current_streak < $milestone['days']) && 
+                           (empty($result) || end($result)['achieved']);
+            
             $result[] = [
                 'days' => $milestone['days'],
                 'reward' => $milestone['reward'],
                 'title' => $milestone['title'],
-                'achieved' => $current_streak >= $milestone['days'],
+                'achieved' => $achieved,
                 'progress' => min(100, ($current_streak / $milestone['days']) * 100),
+                'is_next_goal' => $is_next_goal,
+                'days_remaining' => $achieved ? 0 : max(0, $milestone['days'] - $current_streak),
             ];
         }
         

@@ -112,7 +112,7 @@ class Cashback_Controller extends \WP_REST_Controller {
         // Use the same JWT authentication as eco-swift-chemist-api
         $token = $this->get_token_from_request($request);
         if (!$token) {
-            error_log('Cashback API: No JWT token found in request headers');
+        // ...existing code...
             return new \WP_Error(
                 'rest_no_token',
                 \__('JWT Token not found in request. Please log in again.'),
@@ -120,7 +120,7 @@ class Cashback_Controller extends \WP_REST_Controller {
             );
         }
         
-        error_log('Cashback API: JWT token found, attempting validation');
+    // ...existing code...
         
         // Validate token using eco-swift-chemist-api Token_Service
         if (!\class_exists('EcoSwift\\ChemistApi\\Token_Service')) {
@@ -133,7 +133,7 @@ class Cashback_Controller extends \WP_REST_Controller {
         
         $payload = \EcoSwift\ChemistApi\Token_Service::validate_token($token);
         if (!$payload) {
-            error_log('Cashback API: JWT token validation failed - token is invalid or expired');
+            // ...existing code...
             return new \WP_Error(
                 'rest_token_invalid',
                 \__('JWT Token is invalid or expired. Please log in again.'),
@@ -141,7 +141,7 @@ class Cashback_Controller extends \WP_REST_Controller {
             );
         }
         
-        error_log('Cashback API: JWT token validated successfully for user ID: ' . $payload->data->user->id);
+    // ...existing code...
         
         // Check if user exists and is a chemist
         if (!isset($payload->data->user->id)) {
@@ -318,12 +318,12 @@ class Cashback_Controller extends \WP_REST_Controller {
         $user_id = get_current_user_id();
         
         // Debug logging
-        error_log('Cashback Preview API called - User ID: ' . $user_id . ', Order Value: ' . $order_value);
+    // ...existing code...
         
         try {
             // Check if required classes exist
             if (!class_exists('Embolo\Cashback\Cashback_Logic')) {
-                error_log('Cashback_Logic class not found');
+                // ...existing code...
                 return new \WP_Error(
                     'class_not_found',
                     __('Cashback_Logic class not found. Plugin may not be properly loaded.'),
