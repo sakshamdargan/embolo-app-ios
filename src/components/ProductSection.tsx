@@ -2,7 +2,7 @@ import { ChevronRight } from 'lucide-react';
 import ProductCard from './ProductCard';
 import ProductSkeleton from './ProductSkeleton';
 import ProductCarousel from './ProductCarousel';
-import { Product } from '@/utils/api';
+import type { Product } from '@/services/productService';
 
 interface ProductSectionProps {
   title: string;
