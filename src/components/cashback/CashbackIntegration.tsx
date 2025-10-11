@@ -27,15 +27,14 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
 
   // Debug component mount
   useEffect(() => {
-    console.log('CashbackIntegration component mounted');
+    // mounted
     return () => {
-      console.log('CashbackIntegration component unmounted');
+      // unmounted
     };
   }, []);
 
   // Debug popup state changes
   useEffect(() => {
-    console.log('CashbackIntegration showPopup state changed to:', showPopup);
   }, [showPopup]);
 
   // Sync orderValue prop with state
@@ -47,10 +46,8 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
 
   // Test function to check API connectivity
   const testCashbackAPI = async () => {
-    console.log('Testing cashback API...');
     try {
       const preview = await getCashbackPreview(1000);
-      console.log('Cashback API test successful:', preview);
     } catch (error) {
       console.error('Cashback API test failed:', error);
     }
@@ -97,7 +94,6 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
 
   // Trigger cashback popup manually (for testing or manual triggers)
   const triggerCashbackPopup = (orderId?: number, orderValue?: number) => {
-    console.log('triggerCashbackPopup called with orderId:', orderId, 'orderValue:', orderValue);
     if (orderId) {
       setProcessedOrderId(orderId);
     }
@@ -105,7 +101,6 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
       setCurrentOrderValue(orderValue);
     }
     setShowPopup(true);
-    console.log('Popup state set to true');
   };
 
   // Expose method via ref
@@ -116,7 +111,6 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
   // Expose trigger function to window object
   useEffect(() => {
     (window as any).triggerCashbackPopup = triggerCashbackPopup;
-    console.log('window.triggerCashbackPopup has been set');
     
     return () => {
       delete (window as any).triggerCashbackPopup;
@@ -204,7 +198,6 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
         orderValue={currentOrderValue}
         onOrderSuccess={() => {
           // Handle successful order processing
-          console.log('Order cashback processed successfully');
           // Don't close popup here - let it auto-close after animation
         }}
       />

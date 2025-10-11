@@ -225,23 +225,19 @@ const Checkout = () => {
         const orderId = response.data?.id;
         if (orderId) {
           const totalPrice = getTotalPrice();
-          console.log('Order placed successfully, triggering cashback popup with order ID:', orderId, 'and value:', totalPrice);
           
           // Try multiple methods to trigger cashback popup
           // Method 1: Use global ref
           const globalRef = (window as any).globalCashbackRef;
           if (globalRef?.current) {
-            console.log('Using globalCashbackRef.current.triggerPopup');
             globalRef.current.triggerPopup(orderId, totalPrice);
           }
           // Method 2: Use window function
           else if ((window as any).triggerCashbackPopup) {
-            console.log('Using window.triggerCashbackPopup');
             (window as any).triggerCashbackPopup(orderId, totalPrice);
           }
           // Method 3: Fallback to custom event
           else {
-            console.log('Using custom event fallback');
             window.dispatchEvent(new CustomEvent('orderPlaced', { 
               detail: { orderId, orderValue: totalPrice } 
             }));
@@ -271,14 +267,11 @@ const Checkout = () => {
         // Trigger cashback popup with order ID
         const orderId = responseData?.data?.id;
         if (orderId) {
-          console.log('Order placed successfully (error path), triggering cashback popup with order ID:', orderId, 'and value:', getTotalPrice());
           
           // Try to trigger cashback popup
           if ((window as any).triggerCashbackPopup) {
-            console.log('Using window.triggerCashbackPopup (error path)');
             (window as any).triggerCashbackPopup(orderId);
           } else {
-            console.log('Using custom event fallback (error path)');
             // Fallback: dispatch custom event
             window.dispatchEvent(new CustomEvent('orderPlaced', { 
               detail: { orderId, orderValue: getTotalPrice() } 
@@ -736,21 +729,17 @@ const Checkout = () => {
                 <p className="text-sm text-yellow-800 mb-2">Debug: Test Cashback Popup</p>
                 <button
                   onClick={() => {
-                    console.log('Manual test button clicked');
                     // Method 1: Try global ref first
                     const globalRef = (window as any).globalCashbackRef;
                     if (globalRef?.current) {
-                      console.log('Calling globalCashbackRef.current.triggerPopup');
                       globalRef.current.triggerPopup(12345);
                     }
                     // Method 2: Try window function
                     else if ((window as any).triggerCashbackPopup) {
-                      console.log('Calling window.triggerCashbackPopup with test data');
                       (window as any).triggerCashbackPopup(12345);
                     }
                     // Method 3: Fallback to event
                     else {
-                      console.log('window.triggerCashbackPopup not available, dispatching event');
                       window.dispatchEvent(new CustomEvent('orderPlaced', { 
                         detail: { orderId: 12345, orderValue: 1000 } 
                       }));

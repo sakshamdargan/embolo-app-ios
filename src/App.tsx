@@ -34,7 +34,6 @@ const App = () => {
   // Expose global cashback trigger function
   useEffect(() => {
     (window as any).globalCashbackRef = globalCashbackRef;
-    console.log('Global cashback ref exposed to window');
     
     return () => {
       delete (window as any).globalCashbackRef;

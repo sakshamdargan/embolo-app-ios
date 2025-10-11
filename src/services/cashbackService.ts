@@ -17,7 +17,6 @@ cashbackAPI.interceptors.request.use(
     const token = localStorage.getItem('eco_swift_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('Adding JWT token to cashback request:', config.url);
     } else {
       console.warn('No JWT token found for cashback request:', config.url);
     }

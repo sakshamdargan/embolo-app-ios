@@ -30,13 +30,11 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
 
   // Debug logging
   useEffect(() => {
-    console.log('CashbackPopup props changed:', { isOpen, orderId, orderValue });
   }, [isOpen, orderId, orderValue]);
 
   // Reset state when popup opens
   useEffect(() => {
     if (isOpen) {
-      console.log('CashbackPopup opened, resetting state to calculating');
       setState('calculating');
       setProgress(0);
     }
@@ -65,7 +63,6 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
       // Fetch cashback that was created automatically by backend
       const fetchOrderCashback = async () => {
         try {
-          console.log('Fetching cashback for order:', orderId);
           
           // Retry mechanism: Try up to 5 times with increasing delays
           const maxRetries = 5;
@@ -76,21 +73,19 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
             retryCount++;
             const delay = retryCount * 1000; // 1s, 2s, 3s, 4s, 5s
             
-            console.log(`Attempt ${retryCount}/${maxRetries} - waiting ${delay}ms before fetching...`);
+            // debug: retry attempt
             await new Promise(resolve => setTimeout(resolve, delay));
             
             try {
               result = await getOrderCashback(orderId);
               if (result && result.amount > 0) {
-                console.log('Cashback found:', result);
                 break;
               } else {
-                console.log(`Attempt ${retryCount}: Cashback not ready yet, will retry...`);
                 result = null;
               }
             } catch (error: any) {
               if (error.response?.status === 404) {
-                console.log(`Attempt ${retryCount}: Cashback not found (404), will retry...`);
+                // 404 - cashback not found yet, will retry
                 result = null;
               } else {
                 throw error; // Other errors should be thrown
