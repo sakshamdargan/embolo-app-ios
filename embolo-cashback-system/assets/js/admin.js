@@ -1,6 +1,6 @@
 // Define global functions immediately (before document.ready)
 // These need to be available for inline onclick handlers
-
+const { emboloCashbackAdmin } = window;
 // Approve single cashback
 window.emboloApproveCashback = function(cashbackId) {
     if (!confirm(emboloCashbackAdmin.strings.confirmApprove)) {
@@ -72,19 +72,20 @@ window.emboloDeleteCashback = function(cashbackId) {
 };
 
 // Bulk actions
-window.emboloBulkAction = function() {
-    const action = jQuery('#bulk-action-selector-top').val();
+window.emboloBulkAction = function(action, formId = '#embolo-bulk-form') {
+    action = action || jQuery(formId).find('select[name="bulk_action"]').val();
     if (!action) {
         alert('Please select an action');
         return;
     }
     
-    const checkedBoxes = jQuery('input[name="cashback_ids[]"]:checked');
+    const checkedBoxes = jQuery(`${formId} input[name="cashback_ids[]"]:checked`);
     if (checkedBoxes.length === 0) {
         alert('Please select at least one cashback entry');
         return;
     }
     
+    // Get cashback IDs from checked boxes
     const cashbackIds = checkedBoxes.map(function() {
         return jQuery(this).val();
     }).get();
@@ -92,12 +93,13 @@ window.emboloBulkAction = function() {
     let confirmMessage = action === 'approve' 
         ? emboloCashbackAdmin.strings.confirmBulkApprove 
         : emboloCashbackAdmin.strings.confirmBulkDelete;
+    if (action === 'reject') confirmMessage = 'Are you sure you want to reject selected cashbacks?';
     
     if (!confirm(confirmMessage)) {
         return;
     }
     
-    const button = jQuery('.action');
+    const button = jQuery(`${formId} .action`);
     const originalText = button.text();
     
     button.prop('disabled', true).text(emboloCashbackAdmin.strings.processing);
@@ -127,41 +129,29 @@ window.emboloBulkAction = function() {
     });
 };
 
-// Bulk approve all pending
-window.emboloBulkApproveAll = function() {
-    if (!confirm('Are you sure you want to approve ALL pending cashbacks?')) {
+// Bulk approve ALL pending cashbacks
+window.emboloBulkApproveAllPending = function() {
+    if (!confirm('Are you sure you want to approve ALL pending cashbacks in the system? This action cannot be undone.')) {
         return;
     }
     
-    const button = jQuery('button[onclick="emboloBulkApproveAll()"]');
+    const button = jQuery('button[onclick="emboloBulkApproveAllPending()"]');
     const originalText = button.text();
     
     button.prop('disabled', true).text(emboloCashbackAdmin.strings.processing);
-    
-    // Get all pending cashback IDs
-    const allPendingIds = jQuery('input[name="cashback_ids[]"]').map(function() {
-        return jQuery(this).val();
-    }).get();
-    
-    if (allPendingIds.length === 0) {
-        showNotice('No pending cashbacks found', 'info');
-        button.prop('disabled', false).text(originalText);
-        return;
-    }
     
     jQuery.ajax({
         url: emboloCashbackAdmin.ajaxUrl,
         type: 'POST',
         data: {
-            action: 'embolo_bulk_action_cashback',
-            bulk_action: 'approve',
-            cashback_ids: allPendingIds,
+            action: 'embolo_bulk_approve_all_pending',
             nonce: emboloCashbackAdmin.nonce
         },
         success: function(response) {
             if (response.success) {
                 showNotice(response.data.message, 'success');
-                location.reload();
+                // Use a short delay to allow user to see the notice
+                setTimeout(() => location.reload(), 1500);
             } else {
                 showNotice(response.data.message || emboloCashbackAdmin.strings.error, 'error');
                 button.prop('disabled', false).text(originalText);

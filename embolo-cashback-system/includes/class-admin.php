@@ -13,6 +13,7 @@ class Admin {
         add_action('wp_ajax_embolo_approve_cashback', [$this, 'ajax_approve_cashback']);
         add_action('wp_ajax_embolo_delete_cashback', [$this, 'ajax_delete_cashback']);
         add_action('wp_ajax_embolo_bulk_action_cashback', [$this, 'ajax_bulk_action_cashback']);
+        add_action('wp_ajax_embolo_bulk_approve_all_pending', [$this, 'ajax_bulk_approve_all_pending']);
         
         // Auto-delete cashback when order is deleted or trashed
         add_action('before_delete_post', [$this, 'delete_cashback_on_order_delete']);
@@ -164,8 +165,11 @@ class Admin {
                         <a href="<?php echo admin_url('admin.php?page=embolo-cashback-settings'); ?>" class="button">
                             <?php _e('Cashback Settings'); ?>
                         </a>
-                        <button type="button" class="button" onclick="emboloBulkApproveAll()">
-                            <?php _e('Bulk Mark as Paid'); ?>
+                        <button type="button" class="button" onclick="emboloBulkAction('approve', '#embolo-dashboard-bulk-form')">
+                            <?php _e('Approve Selected'); ?>
+                        </button>
+                        <button type="button" class="button" onclick="emboloBulkAction('delete', '#embolo-dashboard-bulk-form')">
+                            <?php _e('Delete Selected'); ?>
                         </button>
                     </div>
                 </div>
@@ -178,7 +182,9 @@ class Admin {
         $pending_cashbacks = Wallet_Manager::get_pending_cashbacks(50);
         ?>
         <div class="wrap">
-            <h1><?php _e('Pending Cashback Approvals'); ?></h1>
+            <h1 class="wp-heading-inline"><?php _e('Pending Cashback Approvals'); ?></h1>
+            <button type="button" class="page-title-action" onclick="emboloBulkApproveAllPending()"><?php _e('Approve All Pending'); ?></button>
+            <hr class="wp-header-end">
             
             <?php if (empty($pending_cashbacks)): ?>
                 <div class="notice notice-info">
@@ -189,9 +195,10 @@ class Admin {
                     <div class="tablenav top">
                         <div class="alignleft actions bulkactions">
                             <select name="bulk_action" id="bulk-action-selector-top">
-                                <option value=""><?php _e('Bulk Actions'); ?></option>
-                                <option value="approve"><?php _e('Mark as Paid'); ?></option>
-                                <option value="delete"><?php _e('Delete'); ?></option>
+                                <option value=""><?php _e('Bulk actions'); ?></option>
+                                <option value="approve"><?php _e('Approve (Mark as Paid)'); ?></option>
+                                <option value="reject"><?php _e('Reject'); ?></option>
+                                <option value="delete"><?php _e('Delete Permanently'); ?></option>
                             </select>
                             <button type="button" class="button action" onclick="emboloBulkAction()"><?php _e('Apply'); ?></button>
                         </div>
@@ -212,6 +219,13 @@ class Admin {
             <?php $this->render_cashback_table($all_cashbacks); ?>
         </div>
         <?php
+    }
+
+    public function ajax_bulk_approve_all_pending() {
+        check_ajax_referer('embolo_cashback_admin', 'nonce');
+        $approved_by = get_current_user_id();
+        $results = Wallet_Manager::bulk_approve_all_pending($approved_by);
+        wp_send_json_success(['message' => sprintf(__('%d cashbacks approved successfully!'), $results)]);
     }
     
     public function admin_settings_page() {
@@ -585,9 +599,13 @@ class Admin {
         if ($bulk_action === 'approve') {
             $results = Wallet_Manager::bulk_approve_cashbacks($cashback_ids, $approved_by);
             $success_count = count(array_filter($results));
-            wp_send_json_success([
-                'message' => sprintf(__('%d cashbacks approved successfully!'), $success_count)
-            ]);
+            $message = sprintf(__('%d of %d selected cashbacks approved successfully!'), $success_count, count($cashback_ids));
+            wp_send_json_success(['message' => $message]);
+        } elseif ($bulk_action === 'reject') {
+            $results = Wallet_Manager::bulk_reject_cashbacks($cashback_ids);
+            $success_count = count(array_filter($results));
+            $message = sprintf(__('%d of %d selected cashbacks rejected successfully!'), $success_count, count($cashback_ids));
+            wp_send_json_success(['message' => $message]);
         } elseif ($bulk_action === 'delete') {
             $results = Wallet_Manager::bulk_delete_cashbacks($cashback_ids);
             $success_count = count(array_filter($results));

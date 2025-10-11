@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, Sparkles, Gift, CheckCircle, Loader2 } from 'lucide-react';
+import { Rocket, Sparkles, Gift, CheckCircle, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCashback } from '@/hooks/useCashback';
@@ -10,8 +10,9 @@ interface CashbackPopupProps {
   isOpen: boolean;
   onClose: () => void;
   orderId?: number;
-  orderValue?: number;
+  orderValue: number;
   onOrderSuccess?: () => void;
+  isInitiallyCalculating?: boolean; // New prop to control initial state
 }
 
 type PopupState = 'calculating' | 'success' | 'error' | 'closed';
@@ -20,10 +21,11 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
   isOpen,
   onClose,
   orderId,
-  orderValue = 0,
-  onOrderSuccess
+  orderValue,
+  onOrderSuccess,
+  isInitiallyCalculating = false,
 }) => {
-  const [state, setState] = useState<PopupState>('calculating');
+  const [state, setState] = useState<PopupState>(isInitiallyCalculating ? 'calculating' : 'closed');
   const [cashbackAmount, setCashbackAmount] = useState<number>(0);
   const [progress, setProgress] = useState(0);
   const { getCashbackPreview, getOrderCashback, loading } = useCashback();
@@ -35,32 +37,37 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
   // Reset state when popup opens
   useEffect(() => {
     if (isOpen) {
-      setState('calculating');
+      // If we open with an orderId, we are fetching. Otherwise, we are in the initial "calculating" phase.
+      setState('calculating'); 
       setProgress(0);
+      setCashbackAmount(0);
     }
   }, [isOpen]);
 
   // Simulate progress animation
   useEffect(() => {
-    if (isOpen && state === 'calculating') {
+    if (state === 'calculating') {
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 90) {
             clearInterval(interval);
             return 90;
           }
-          return prev + Math.random() * 15;
+          return prev + Math.random() * 5;
         });
-      }, 200);
+      }, 300);
 
       return () => clearInterval(interval);
     }
-  }, [isOpen, state]);
+  }, [state]);
 
   // Handle cashback calculation
   useEffect(() => {
-    if (isOpen && orderId) {
-      // Fetch cashback that was created automatically by backend
+    // This effect now ONLY runs when an orderId is provided.
+    // It will trigger when the popup is already open and receives the orderId.
+    if (isOpen && orderId && !isInitiallyCalculating) {
+      console.log(`CashbackPopup: Received orderId ${orderId}, fetching final amount.`);
+      setState('calculating'); // Ensure we are in a calculating state
       const fetchOrderCashback = async () => {
         try {
           
@@ -113,33 +120,10 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
 
       fetchOrderCashback();
     } else if (isOpen && orderValue >= 0) {
-      // Show preview for order value
-      const getPreview = async () => {
-        try {
-          console.log('Getting cashback preview for value:', orderValue);
-          const preview = await getCashbackPreview(orderValue);
-          console.log('Backend preview result:', preview);
-          
-          if (preview && preview.estimated_amount && preview.estimated_amount > 0) {
-            setCashbackAmount(preview.estimated_amount);
-            setProgress(100);
-            setTimeout(() => {
-              setState('success');
-              triggerConfetti();
-            }, 1500);
-          } else {
-            console.error('Backend returned invalid preview:', preview);
-            setState('error');
-          }
-        } catch (error) {
-          console.error('Backend cashback preview failed:', error);
-          setState('error');
-        }
-      };
-
-      getPreview();
+      // The logic for preview is removed from here as it's not part of the post-order flow.
+      // The initial "calculating" state is now the default when no orderId is present.
     }
-  }, [isOpen, orderId, orderValue, getOrderCashback, getCashbackPreview, onOrderSuccess]);
+  }, [isOpen, orderId, getOrderCashback, onOrderSuccess, isInitiallyCalculating]);
 
   const triggerConfetti = () => {
     // Trigger confetti animation
@@ -193,7 +177,7 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
       }
     },
     success: {
-      y: -50,
+      y: 0,
       rotate: 0,
       scale: 1.2,
       transition: { duration: 0.5 }
@@ -232,6 +216,14 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
             className="w-full max-w-md"
           >
             <Card className="relative overflow-hidden bg-gradient-to-br from-white to-green-50 border-2 border-primary/20 shadow-2xl">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="absolute top-2 right-2 h-8 w-8 text-gray-500 hover:bg-gray-200 z-10"
+              >
+                <X className="w-5 h-5" />
+              </Button>
               <CardContent className="p-8 text-center relative">
                 {/* Background sparkles */}
                 <div className="absolute inset-0 overflow-hidden">
@@ -292,7 +284,7 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
                       </motion.h2>
                       
                       <p className="text-gray-600">
-                        Our dopamine-driven algorithm is working its magic!
+                        Our smart algorithm is calculating your special reward!
                       </p>
 
                       {/* Progress bar */}
@@ -388,9 +380,6 @@ const CashbackPopup: React.FC<CashbackPopupProps> = ({
                           Awesome! Continue Shopping
                         </Button>
                         
-                        <p className="text-xs text-gray-500 text-center mt-2">
-                          Popup will stay open until you click the button
-                        </p>
                       </motion.div>
                     </div>
                   </motion.div>

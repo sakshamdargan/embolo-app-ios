@@ -156,6 +156,12 @@ const Checkout = () => {
       return;
     }
 
+    // 1. Show "calculating" animation immediately
+    const totalPrice = getTotalPrice();
+    if ((window as any).showCalculatingCashback) {
+      (window as any).showCalculatingCashback(totalPrice);
+    }
+
     try {
       setLoading(true);
 
@@ -224,13 +230,12 @@ const Checkout = () => {
         // Trigger cashback popup with order ID
         const orderId = response.data?.id;
         if (orderId) {
-          const totalPrice = getTotalPrice();
           
           // Try multiple methods to trigger cashback popup
           // Method 1: Use global ref
           const globalRef = (window as any).globalCashbackRef;
           if (globalRef?.current) {
-            globalRef.current.triggerPopup(orderId, totalPrice);
+            globalRef.current.triggerPopup(orderId);
           }
           // Method 2: Use window function
           else if ((window as any).triggerCashbackPopup) {
@@ -267,7 +272,6 @@ const Checkout = () => {
         // Trigger cashback popup with order ID
         const orderId = responseData?.data?.id;
         if (orderId) {
-          
           // Try to trigger cashback popup
           if ((window as any).triggerCashbackPopup) {
             (window as any).triggerCashbackPopup(orderId);
@@ -723,34 +727,6 @@ const Checkout = () => {
               </CardContent>
             </Card>
 
-            {/* Debug: Test Cashback Popup Button */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 mb-2">Debug: Test Cashback Popup</p>
-                <button
-                  onClick={() => {
-                    // Method 1: Try global ref first
-                    const globalRef = (window as any).globalCashbackRef;
-                    if (globalRef?.current) {
-                      globalRef.current.triggerPopup(12345);
-                    }
-                    // Method 2: Try window function
-                    else if ((window as any).triggerCashbackPopup) {
-                      (window as any).triggerCashbackPopup(12345);
-                    }
-                    // Method 3: Fallback to event
-                    else {
-                      window.dispatchEvent(new CustomEvent('orderPlaced', { 
-                        detail: { orderId: 12345, orderValue: 1000 } 
-                      }));
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Test Cashback Popup
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>

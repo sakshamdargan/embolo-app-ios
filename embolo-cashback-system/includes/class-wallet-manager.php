@@ -492,6 +492,26 @@ class Wallet_Manager {
         return $results;
     }
     
+    public static function bulk_approve_all_pending($approved_by = null) {
+        global $wpdb;
+        $cashback_table = $wpdb->prefix . 'embolo_cashback';
+        
+        // Get all pending cashback IDs
+        $pending_ids = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT id FROM $cashback_table WHERE status = %s",
+                'processing'
+            )
+        );
+        
+        if (empty($pending_ids)) {
+            return 0;
+        }
+        
+        $results = self::bulk_approve_cashbacks($pending_ids, $approved_by);
+        return count(array_filter($results));
+    }
+    
     public static function bulk_reject_cashbacks($cashback_ids, $reason = '') {
         $results = [];
         

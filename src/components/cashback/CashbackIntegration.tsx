@@ -22,11 +22,13 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
   showPreview = true
 }, ref) => {
   const [showPopup, setShowPopup] = useState(false);
+  const [isCalculating, setIsCalculating] = useState(false);
   const [processedOrderId, setProcessedOrderId] = useState<number | null>(null);
   const [currentOrderValue, setCurrentOrderValue] = useState<number>(orderValue);
 
   // Debug component mount
   useEffect(() => {
+  // console.log('CashbackIntegration mounted');
     // mounted
     return () => {
       // unmounted
@@ -35,6 +37,7 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
 
   // Debug popup state changes
   useEffect(() => {
+  // console.log('Popup show state:', showPopup);
   }, [showPopup]);
 
   // Sync orderValue prop with state
@@ -92,14 +95,25 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
     onOrderPlaced?.(orderId);
   };
 
-  // Trigger cashback popup manually (for testing or manual triggers)
-  const triggerCashbackPopup = (orderId?: number, orderValue?: number) => {
-    if (orderId) {
-      setProcessedOrderId(orderId);
-    }
+  // 1. Show the "calculating" animation immediately
+  const showCalculatingCashback = (orderValue?: number) => {
+    console.log('Showing calculating cashback animation...');
+    setIsCalculating(true);
+    setProcessedOrderId(null);
     if (orderValue !== undefined) {
       setCurrentOrderValue(orderValue);
     }
+    setShowPopup(true);
+  };
+
+  // Trigger cashback popup manually (for testing or manual triggers)
+  // 2. This function now receives the orderId and shows the final result
+  const triggerCashbackPopup = (orderId?: number, orderValue?: number) => {
+    console.log('Triggering final cashback popup for orderId:', orderId);
+    if (orderId) {
+      setProcessedOrderId(orderId);
+    }
+    setIsCalculating(false); // We have an orderId, so we are no longer just "calculating"
     setShowPopup(true);
   };
 
@@ -110,9 +124,11 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
 
   // Expose trigger function to window object
   useEffect(() => {
+    (window as any).showCalculatingCashback = showCalculatingCashback;
     (window as any).triggerCashbackPopup = triggerCashbackPopup;
     
     return () => {
+      delete (window as any).showCalculatingCashback;
       delete (window as any).triggerCashbackPopup;
     };
   }, []);
@@ -193,6 +209,7 @@ const CashbackIntegration = forwardRef<CashbackIntegrationRef, CashbackIntegrati
         onClose={() => {
           setShowPopup(false);
           setProcessedOrderId(null);
+          setIsCalculating(false);
         }}
         orderId={processedOrderId || undefined}
         orderValue={currentOrderValue}
