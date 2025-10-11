@@ -1,13 +1,9 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.616c1b5dc8534ed0959336674d44f339',
-  appName: 'Easdeal',
+  appId: 'com.embolo.cart',
+  appName: 'Embolo',
   webDir: 'dist',
-  server: {
-    url: 'https://616c1b5d-c853-4ed0-9593-36674d44f339.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   android: {
     buildOptions: {
       keystorePath: undefined,
@@ -15,6 +11,25 @@ const config: CapacitorConfig = {
       keystoreAlias: undefined,
       keystoreAliasPassword: undefined,
       releaseType: 'APK'
+    }
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 0,
+      launchAutoHide: true,
+      backgroundColor: '#00aa63',
+      androidScaleType: 'FIT_CENTER',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    },
+    StatusBar: {
+      style: 'LIGHT',
+      backgroundColor: '#00aa63',
+      overlaysWebView: false
     }
   }
 };

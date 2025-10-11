@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Minus, Plus, ShoppingCart } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, Pill } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCartStore } from '@/store/useCartStore';
@@ -14,6 +14,7 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [quantity, setQuantity] = useState(1);
   const [quantityError, setQuantityError] = useState<string>('');
+  const [imageError, setImageError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const addItem = useCartStore((state) => state.addItem);
 
@@ -23,6 +24,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const inStock = productService.isProductInStock(product);
   const isOnSale = productService.isProductOnSale(product);
   const discountPercentage = isOnSale ? productService.calculateDiscountPercentage(product.regular_price, product.sale_price) : 0;
+  
+  const hasValidImage = imageUrl && !imageUrl.includes('placeholder') && !imageError;
 
   const handleAddToCart = () => {
     if (!inStock) {
@@ -58,12 +61,19 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1 flex flex-col h-full">
       <CardContent className="p-0 flex flex-col h-full">
         {/* Product Image - Fixed Height */}
-        <div className="relative w-full h-48 bg-white flex-shrink-0 border-b border-border">
-          <img
-            src={imageUrl}
-            alt={product.name}
-            className="w-full h-full object-contain p-2"
-          />
+        <div className="relative w-full h-48 bg-gray-50 flex-shrink-0 border-b border-border">
+          {hasValidImage ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-contain p-2"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Pill className="w-20 h-20 text-gray-300" strokeWidth={1.5} />
+            </div>
+          )}
           {!inStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <span className="text-white font-semibold text-xs">Out of Stock</span>

@@ -1,12 +1,14 @@
 import { ReactNode, useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 type LayoutProps = {
   children: ReactNode;
 };
 
 const Layout = ({ children }: LayoutProps) => {
-  const [headerHeight, setHeaderHeight] = useState(72);
+  const [headerHeight, setHeaderHeight] = useState(120);
   const [footerHeight, setFooterHeight] = useState(64);
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     const measure = () => {
@@ -16,17 +18,25 @@ const Layout = ({ children }: LayoutProps) => {
       if (footerEl) setFooterHeight(footerEl.getBoundingClientRect().height);
     };
 
-    measure();
+    // Delay measurement to ensure elements are rendered
+    setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // Fixed top spacing to avoid header overlap and dynamic bottom to clear footer
-  const topPadding = '7.5rem';
-  const bottomPadding = `${Math.max(0, Math.round(footerHeight))}px`;
+  // Calculate padding based on actual header/footer heights
+  const topPadding = `${headerHeight}px`;
+  const bottomPadding = `${footerHeight + 16}px`;
 
   return (
-    <div style={{ paddingTop: topPadding, paddingBottom: bottomPadding }}>
+    <div 
+      className="layout-content"
+      style={{ 
+        paddingTop: topPadding, 
+        paddingBottom: bottomPadding,
+        minHeight: '100vh'
+      }}
+    >
       {children}
     </div>
   );

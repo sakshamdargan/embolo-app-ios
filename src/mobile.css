@@ -1,0 +1,152 @@
+/* Mobile App Optimizations */
+
+/* Safe area insets for notch and navigation bar */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+}
+
+/* Prevent overscroll bounce effect */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* App container with safe areas and scrolling */
+#root {
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height */
+  width: 100vw;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  position: relative;
+}
+
+/* Disable text selection on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs and content areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Smooth scrolling */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Fix for iOS Safari bottom bar */
+@supports (-webkit-touch-callout: none) {
+  #root {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Prevent zoom on input focus */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Status bar styling */
+.status-bar-safe {
+  padding-top: var(--safe-area-inset-top);
+}
+
+/* Bottom navigation safe area */
+.bottom-nav-safe {
+  padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* Full screen content */
+.full-screen {
+  min-height: calc(100vh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+  min-height: calc(100dvh - var(--safe-area-inset-top) - var(--safe-area-inset-bottom));
+}
+
+/* Main content wrapper */
+main, .main-content {
+  padding-bottom: calc(var(--safe-area-inset-bottom) + 20px);
+}
+
+/* Header safe area - fixed positioning with safe area */
+header[id="app-header"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding-top: var(--safe-area-inset-top) !important;
+  z-index: 50 !important;
+}
+
+/* Footer/Navbar safe area - fixed positioning with safe area */
+nav[id="app-footer"] {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  padding-bottom: var(--safe-area-inset-bottom) !important;
+  z-index: 50 !important;
+  height: auto !important;
+  min-height: calc(64px + var(--safe-area-inset-bottom)) !important;
+}
+
+/* Floating cart button adjustment */
+.fixed.bottom-20 {
+  bottom: calc(80px + var(--safe-area-inset-bottom)) !important;
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly buttons */
+button, a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent pull-to-refresh */
+body {
+  overscroll-behavior-y: contain;
+}
