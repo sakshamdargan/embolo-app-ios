@@ -150,3 +150,23 @@ button, a {
 body {
   overscroll-behavior-y: contain;
 }
+
+/* Safe area padding classes */
+.pb-safe {
+  padding-bottom: calc(var(--safe-area-inset-bottom) + 20px) !important;
+}
+
+.pt-safe {
+  padding-top: var(--safe-area-inset-top) !important;
+}
+
+/* Sticky bottom button safe area */
+.sticky-bottom-button {
+  bottom: var(--safe-area-inset-bottom) !important;
+  padding-bottom: calc(var(--safe-area-inset-bottom) + 12px) !important;
+}
+
+/* Content padding for sticky bottom elements */
+.content-with-sticky-bottom {
+  padding-bottom: calc(80px + var(--safe-area-inset-bottom)) !important;
+}

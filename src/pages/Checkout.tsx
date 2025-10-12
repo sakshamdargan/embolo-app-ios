@@ -450,33 +450,30 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-card border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+        <div className="px-4 py-3 sm:py-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/')}
-              className="gap-1 text-xs px-2 py-1 h-8"
+              onClick={() => navigate(-1)}
+              className="p-2 min-w-[44px] min-h-[44px]"
             >
-              <ArrowLeft className="w-3 h-3" />
-              Back
+              <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="bg-primary/10 p-2 rounded-lg border border-primary/20">
-                <ShoppingCart className="w-4 h-4 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold">Checkout</h1>
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <h1 className="text-lg sm:text-xl font-bold">Checkout</h1>
             </div>
-            <div className="w-12"></div> {/* Spacer for centering */}
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Content - Mobile Optimized */}
+      <div className="px-3 sm:px-4 py-4 sm:py-6 content-with-sticky-bottom">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Cart Items & Address */}
           <div className="lg:col-span-2 space-y-6">
             {/* Cart Items */}
@@ -499,26 +496,26 @@ const Checkout = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="max-h-[40vh] overflow-y-auto space-y-4">
+                <div className="max-h-[40vh] overflow-y-auto space-y-3 sm:space-y-4">
                   {items.map((item) => (
                     <Card 
                       key={item.id} 
                       className="rounded-lg border border-gray-200 shadow-sm"
                     >
-                      <CardContent className="p-4">
-                        <div className="flex gap-4 items-start">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex gap-3 sm:gap-4 items-start">
                           <img
                             src={item.image}
                             alt={item.name}
-                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0 border border-gray-200"
+                            className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 border border-gray-200"
                           />
                           
-                          <div className="flex-1 min-w-0 space-y-2">
-                            <h3 className="font-semibold text-sm line-clamp-2">{item.name}</h3>
+                          <div className="flex-1 min-w-0 space-y-1 sm:space-y-2">
+                            <h3 className="font-semibold text-xs sm:text-sm line-clamp-2">{item.name}</h3>
                             {item.vendorName && (
                               <p className="text-xs text-muted-foreground">Sold by: {item.vendorName}</p>
                             )}
-                            <p className="text-lg font-bold text-primary">
+                            <p className="text-base sm:text-lg font-bold text-primary">
                               ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
                               <span className="text-sm text-muted-foreground font-normal ml-2">
                                 (₹{parseFloat(item.price).toFixed(2)} each)
@@ -532,18 +529,18 @@ const Checkout = () => {
                                   variant="ghost"
                                   onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                   disabled={item.quantity <= 1}
-                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-r border-gray-300"
+                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-r border-gray-300 min-w-[32px] min-h-[32px]"
                                 >
                                   <Minus className="w-3 h-3" />
                                 </Button>
-                                <span className="px-3 text-sm font-medium min-w-8 text-center bg-background">
+                                <span className="px-2 sm:px-3 text-sm font-medium min-w-8 text-center bg-background">
                                   {item.quantity}
                                 </span>
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-l border-gray-300"
+                                  className="h-8 w-8 p-0 rounded-none hover:bg-muted border-l border-gray-300 min-w-[32px] min-h-[32px]"
                                 >
                                   <Plus className="w-3 h-3" />
                                 </Button>
@@ -553,10 +550,10 @@ const Checkout = () => {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => removeItem(item.id)}
-                                className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
+                                className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 text-xs min-w-[44px] min-h-[32px]"
                               >
                                 <Trash2 className="w-3 h-3" />
-                                Remove
+                                <span className="hidden sm:inline">Remove</span>
                               </Button>
                             </div>
                           </div>
@@ -571,11 +568,11 @@ const Checkout = () => {
 
             {/* Delivery Address */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3 sm:pb-6">
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5" />
-                    Delivery Address
+                    <MapPin className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="text-sm sm:text-base">Delivery Address</span>
                   </div>
                   <Dialog open={showAddressForm} onOpenChange={setShowAddressForm}>
                     <DialogTrigger asChild>
@@ -586,9 +583,10 @@ const Checkout = () => {
                           setEditingAddress(null);
                           resetAddressForm();
                         }}
+                        className="min-w-[44px] min-h-[32px]"
                       >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add New
+                        <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">Add New</span>
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
@@ -731,26 +729,33 @@ const Checkout = () => {
         </div>
       </div>
 
-      {/* Sticky Bottom Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="max-w-6xl mx-auto">
-            <Button
-              onClick={handlePlaceOrder}
-              disabled={loading || !validateForm()}
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all rounded-xl"
-              size="lg"
-            >
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Placing Order...
-                </div>
-              ) : (
-                `Place Order - ₹${getTotalPrice().toFixed(2)}`
-              )}
-            </Button>
-          </div>
+      {/* Sticky Bottom Place Order Button - Mobile Optimized */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50 pb-safe">
+        <div className="px-4 py-3 pb-6">
+          <Button
+            onClick={handlePlaceOrder}
+            disabled={loading || !validateForm()}
+            className="w-full h-12 sm:h-14 bg-primary hover:bg-primary/90 text-base sm:text-lg font-semibold text-white shadow-lg hover:shadow-xl transition-all rounded-xl"
+            size="lg"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+                <span className="text-sm sm:text-base">
+                  {(() => {
+                    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+                    return totalQuantity > 50 
+                      ? `Processing ${totalQuantity} items...` 
+                      : 'Placing Order...';
+                  })()}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm sm:text-base">
+                Place Order - ₹{getTotalPrice().toFixed(2)}
+              </span>
+            )}
+          </Button>
         </div>
       </div>
     </div>
