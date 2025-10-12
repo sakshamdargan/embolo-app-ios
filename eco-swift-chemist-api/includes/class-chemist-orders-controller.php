@@ -140,10 +140,18 @@ class Chemist_Orders_Controller extends \WP_REST_Controller {
             $order->set_shipping_postcode($shipping['postcode'] ?? $billing['postcode'] ?? '');
             $order->set_shipping_country($shipping['country'] ?? $billing['country'] ?? 'IN');
 
+            // ============================================================
+            // STEP 3: Pre-validate All Products Before Adding (Performance Optimization)
+            // ============================================================
+            
+            $validated_products = [];
+            $total_items = 0;
+            
             foreach ($line_items as $item) {
                 $product_id = intval($item['product_id']);
                 $quantity = intval($item['quantity']);
                 $variation_id = isset($item['variation_id']) ? intval($item['variation_id']) : 0;
+                $total_items += $quantity;
 
                 if ($quantity <= 0) {
                     $order->delete(true);
@@ -173,7 +181,17 @@ class Chemist_Orders_Controller extends \WP_REST_Controller {
                     return new \WP_Error('insufficient_stock', "Insufficient stock for {$product->get_name()}. Available: {$product->get_stock_quantity()}, Requested: {$quantity}", ['status' => 400]);
                 }
 
-                $order->add_product($product, $quantity);
+                $validated_products[] = ['product' => $product, 'quantity' => $quantity];
+            }
+            
+            // Log for large orders
+            if ($total_items > 50) {
+                error_log("Processing large order with {$total_items} total items");
+            }
+            
+            // Add all validated products in batch
+            foreach ($validated_products as $item) {
+                $order->add_product($item['product'], $item['quantity']);
             }
 
             // ============================================================
@@ -251,8 +269,9 @@ class Chemist_Orders_Controller extends \WP_REST_Controller {
             // STEP 9: Trigger Analytics Hooks (Async - Don't Wait)
             // ============================================================
             
+            // Only trigger safe hooks that don't interfere with stock management
             do_action('woocommerce_new_order', $order->get_id(), $order);
-            do_action('woocommerce_checkout_order_created', $order);
+            // Skip woocommerce_checkout_order_created to avoid stock reservation conflicts
             do_action('woocommerce_api_create_order', $order->get_id(), $order, $request);
             
             // Trigger cashback system integration
