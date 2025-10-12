@@ -11,8 +11,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const location = useLocation();
 
   if (loading) {
-    // Return null to show nothing while loading - splash screen will handle it
-    return null;
+    // Show gradient background while auth is loading - matches loader
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#00aa63] to-[#009955]" />
+    );
   }
 
   if (!isAuthenticated) {

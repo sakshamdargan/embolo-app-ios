@@ -21,7 +21,8 @@ import Layout from "./components/Layout";
 import Header from "./components/Header";
 import NotFound from "./pages/NotFound";
 import CashbackIntegration, { CashbackIntegrationRef } from "./components/cashback/CashbackIntegration";
-import { useRef, useEffect } from "react";
+import AppLoader from "./components/AppLoader";
+import { useRef, useEffect, useState } from "react";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => {
   // 🔄 SLIDING SESSION: Token automatically extends on every API call (see service interceptors)
   // No background refresh needed!
   
+  const [showLoader, setShowLoader] = useState(true);
   const globalCashbackRef = useRef<CashbackIntegrationRef>(null);
 
   // Expose global cashback trigger function
@@ -40,58 +42,68 @@ const App = () => {
     };
   }, []);
 
+  const handleLoadComplete = () => {
+    setShowLoader(false);
+  };
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner position="top-center" />
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
-          <AuthProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+    <>
+      {/* App loads in background */}
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner position="top-center" />
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <AuthProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                
+                {/* Protected routes - All app content requires authentication */}
+                <Route path="/*" element={
+                  <ProtectedRoute>
+                    <div className="relative">
+                      <Header />
+                      <Layout>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/checkout" element={<Checkout />} />
+                          <Route path="/orders" element={<Orders />} />
+                          <Route path="/wallet" element={<Wallet />} />
+                          <Route path="/quick" element={<Quick />} />
+                          <Route path="/assistance" element={<Assistance />} />
+                          <Route path="/user" element={<User />} />
+                          <Route path="/about" element={<AboutUs />} />
+                          <Route path="/updates" element={<Updates />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Layout>
+                      <Navbar />
+                    </div>
+                  </ProtectedRoute>
+                } />
+              </Routes>
               
-              {/* Protected routes - All app content requires authentication */}
-              <Route path="/*" element={
-                <ProtectedRoute>
-                  <div className="relative">
-                    <Header />
-                    <Layout>
-                      <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/checkout" element={<Checkout />} />
-                        <Route path="/orders" element={<Orders />} />
-                        <Route path="/wallet" element={<Wallet />} />
-                        <Route path="/quick" element={<Quick />} />
-                        <Route path="/assistance" element={<Assistance />} />
-                        <Route path="/user" element={<User />} />
-                        <Route path="/about" element={<AboutUs />} />
-                        <Route path="/updates" element={<Updates />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Layout>
-                    <Navbar />
-                  </div>
-                </ProtectedRoute>
-              } />
-            </Routes>
-            
-            {/* Global Cashback Integration - Persists across all pages */}
-            <CashbackIntegration 
-              ref={globalCashbackRef}
-              orderValue={0}
-              showPreview={false}
-            />
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+              {/* Global Cashback Integration - Persists across all pages */}
+              <CashbackIntegration 
+                ref={globalCashbackRef}
+                orderValue={0}
+                showPreview={false}
+              />
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+
+      {/* Loader overlays on top while app loads */}
+      {showLoader && <AppLoader onLoadComplete={handleLoadComplete} />}
+    </>
   );
 };
 

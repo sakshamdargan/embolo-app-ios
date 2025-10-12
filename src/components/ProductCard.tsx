@@ -11,6 +11,15 @@ interface ProductCardProps {
   product: Product;
 }
 
+// Add styles for ProductCard buttons
+const cardButtonStyles = `
+  .product-card-buttons button,
+  .product-card-buttons a {
+    min-height: 33px;
+    min-width: 19px;
+  }
+`;
+
 const ProductCard = ({ product }: ProductCardProps) => {
   const [quantity, setQuantity] = useState(1);
   const [quantityError, setQuantityError] = useState<string>('');
@@ -58,8 +67,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
 
   return (
-    <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1 flex flex-col h-full">
-      <CardContent className="p-0 flex flex-col h-full">
+    <>
+      <style>{cardButtonStyles}</style>
+      <Card className="overflow-hidden rounded-2xl shadow-md hover:shadow-xl transition-all hover:-translate-y-1 flex flex-col h-full">
+        <CardContent className="p-0 flex flex-col h-full product-card-buttons">
         {/* Product Image - Fixed Height */}
         <div className="relative w-full h-48 bg-gray-50 flex-shrink-0 border-b border-border">
           {hasValidImage ? (
@@ -104,8 +115,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
 
           {/* Ultra Responsive Quantity Selector for Small Phones */}
-          <div className="flex items-center gap-0.5 xs:gap-1 sm:gap-2 mt-auto">
-            <div className="flex items-center border border-border rounded-md overflow-hidden bg-background shadow-sm">
+          <div className="flex items-center gap-1 mt-auto">
+            <div className="flex items-center border border-border rounded-md overflow-hidden bg-background shadow-sm flex-shrink-0">
               <button
                 type="button"
                 onClick={(e) => {
@@ -118,18 +129,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 }}
                 disabled={!inStock}
                 className="
-                  h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 md:h-9 md:w-9
-                  text-[10px] xs:text-xs sm:text-sm 
+                  h-[30px] w-[15px]
                   hover:bg-gray-100 active:bg-gray-200 
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition-all duration-150 ease-in-out
                   flex items-center justify-center shrink-0
                   touch-manipulation select-none
                   border-r border-border
+                  text-[10px] font-bold
                 "
                 aria-label="Decrease quantity"
               >
-                <Minus className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" strokeWidth={2.5} />
+                &lt;
               </button>
               <input
                 ref={inputRef}
@@ -167,14 +178,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
                   }
                 }}
                 className="
-                  px-0.5 xs:px-1 sm:px-1.5 md:px-2
-                  w-6 xs:w-8 sm:w-10 md:w-12
-                  min-w-[1.5rem] xs:min-w-[2rem] sm:min-w-[2.5rem] md:min-w-[3rem]
+                  px-1
+                  w-[35px]
+                  min-w-[35px]
                   text-center 
-                  text-[10px] xs:text-xs sm:text-sm md:text-sm
+                  text-xs
                   font-bold 
                   border-0 border-x border-border
-                  h-6 xs:h-7 sm:h-8 md:h-9
+                  h-[30px]
                   bg-transparent 
                   focus:outline-none focus:bg-gray-50
                   transition-colors duration-150
@@ -199,18 +210,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
                 }}
                 disabled={!inStock}
                 className="
-                  h-6 w-6 xs:h-7 xs:w-7 sm:h-8 sm:w-8 md:h-9 md:w-9
-                  text-[10px] xs:text-xs sm:text-sm 
+                  h-[30px] w-[15px]
                   hover:bg-gray-100 active:bg-gray-200 
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition-all duration-150 ease-in-out
                   flex items-center justify-center shrink-0
                   touch-manipulation select-none
                   border-l border-border
+                  text-[10px] font-bold
                 "
                 aria-label="Increase quantity"
               >
-                <Plus className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" strokeWidth={2.5} />
+                &gt;
               </button>
             </div>
 
@@ -219,23 +230,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
               disabled={!inStock}
               className="
                 flex-1 
-                h-6 xs:h-7 sm:h-8 md:h-9
-                gap-0.5 xs:gap-1 sm:gap-1 
+                h-[30px]
                 bg-primary hover:bg-primary/90 active:bg-primary/80
                 font-medium 
-                text-[9px] xs:text-[10px] sm:text-xs md:text-sm
-                px-1 xs:px-1.5 sm:px-2 md:px-3
+                px-2
                 transition-all duration-150 ease-in-out
                 touch-manipulation
-                min-w-[60px] xs:min-w-[70px] sm:min-w-[80px] md:min-w-[90px]
-                max-w-none
-                whitespace-nowrap
+                flex items-center justify-center
               "
               size="sm"
             >
-              <ShoppingCart className="w-2.5 h-2.5 xs:w-3 xs:h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 shrink-0" />
-              <span className="hidden xs:inline">Add</span>
-              <span className="xs:hidden">+</span>
+              <ShoppingCart className="w-3.5 h-3.5" strokeWidth={2} />
             </Button>
           </div>
           {/* Inline quantity error message */}
@@ -245,8 +250,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </div>
           )}
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 

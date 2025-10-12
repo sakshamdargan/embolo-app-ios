@@ -1,18 +1,19 @@
 package com.embolo.cart;
 
 import android.os.Bundle;
-import androidx.core.splashscreen.SplashScreen;
+import android.view.View;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Install splash screen
-        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        // Set transparent window before super.onCreate to prevent splash
+        getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        getWindow().getDecorView().setSystemUiVisibility(
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE | 
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        );
         
         super.onCreate(savedInstanceState);
-        
-        // Hide splash immediately - no delay
-        splashScreen.setKeepOnScreenCondition(() -> false);
     }
 }
