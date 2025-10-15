@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Transparent background - no splash -->
-    <item>
-        <color android:color="@android:color/transparent" />
-    </item>
-</layer-list>
