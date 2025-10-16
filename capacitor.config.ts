@@ -4,6 +4,15 @@ const config: CapacitorConfig = {
   appId: 'com.embolo.cart',
   appName: 'Embolo',
   webDir: 'dist',
+  server: {
+    cleartext: true,
+    hostname: 'embolo.in',
+    androidScheme: 'https',
+    iosScheme: 'https'
+  },
+  ios: {
+    contentInset: 'always'
+  },
   android: {
     buildOptions: {
       keystorePath: undefined,
@@ -17,19 +26,22 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: true,
-      backgroundColor: '#00aa63',
+      backgroundColor: '#ffffff',
       androidScaleType: 'FIT_CENTER',
       showSpinner: false,
       splashFullScreen: false,
       splashImmersive: false,
+      launchFadeOutDuration: 0
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
     },
     StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#00aa63',
+      style: 'DARK',
       overlaysWebView: false
+    },
+    CapacitorHttp: {
+      enabled: true
     }
   }
 };

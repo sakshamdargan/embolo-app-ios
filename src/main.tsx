@@ -4,14 +4,21 @@ import "./index.css";
 import "./mobile.css";
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
 
 // Initialize Capacitor plugins
 const initializeApp = async () => {
   if (Capacitor.isNativePlatform()) {
-    // Configure Status Bar
+    // Hide splash screen immediately
     try {
-      await StatusBar.setStyle({ style: Style.Light });
-      await StatusBar.setBackgroundColor({ color: '#00aa63' });
+      await SplashScreen.hide();
+    } catch (error) {
+      console.log('Splash screen not available:', error);
+    }
+    
+    // Configure Status Bar - white background with dark text
+    try {
+      await StatusBar.setStyle({ style: Style.Dark });
       await StatusBar.setOverlaysWebView({ overlay: false });
     } catch (error) {
       console.log('Status bar not available:', error);

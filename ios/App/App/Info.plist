@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleDisplayName</key>
+    <string>Embolo</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(MARKETING_VERSION)</string>
+    <key>CFBundleVersion</key>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UIRequiredDeviceCapabilities</key>
+    <array>
+        <string>armv7</string>
+    </array>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <true/>
+    
+    <!-- Network Security Settings -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- Allow arbitrary loads for development - IMPORTANT: Remove for production if using HTTPS -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+        <!-- Alternatively, whitelist your WordPress domain for better security -->
+        <!--
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>yourwordpressdomain.com</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+            </dict>
+        </dict>
+        -->
+    </dict>
+    
+    <!-- Network Access Permissions -->
+    <key>NSURLSessionAllowsConstrainedNetworkAccess</key>
+    <true/>
+    <key>NSURLSessionAllowsExpensiveNetworkAccess</key>
+    <true/>
+    <key>NSURLSessionRequiresDNSSECValidation</key>
+    <false/>
+    
+    <!-- Local Network for API Communication -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>This app needs local network access to communicate with backend services.</string>
+    
+    <!-- Add this for internet connectivity verification -->
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_http._tcp</string>
+        <string>_https._tcp</string>
+    </array>
+    
+    <!-- Permission Descriptions -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>This app uses location to provide location-based services.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>This app uses location to provide location-based services.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access for scanning.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>This app needs microphone access for voice features.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>This app needs photo library access to select images.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>This app needs permission to save photos to your library.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>This app needs contacts access to manage your contacts.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>This app needs calendar access for scheduling.</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>This app needs reminders access for notifications.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>This app needs motion access for activity tracking.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app needs Bluetooth access for device connectivity.</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>This app needs Bluetooth access for device connectivity.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>This app uses Face ID for secure authentication.</string>
+    
+    <!-- User Notifications -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+</dict>
+</plist>

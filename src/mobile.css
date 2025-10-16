@@ -17,8 +17,10 @@ html {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  background-color: white;
 }
 
+/* iOS Status Bar - White Background */
 body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
@@ -32,6 +34,20 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
+  background-color: white !important;
+}
+
+/* Ensure white background extends into status bar area */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 44px);
+  background-color: white;
+  z-index: 9999;
+  pointer-events: none;
 }
 
 /* App container with safe areas and scrolling */
