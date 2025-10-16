@@ -16,10 +16,10 @@ const initializeApp = async () => {
       console.log('Splash screen not available:', error);
     }
     
-    // Configure Status Bar - white background with dark text
+    // Configure Status Bar - transparent like native iOS apps
     try {
-      await StatusBar.setStyle({ style: Style.Dark });
-      await StatusBar.setOverlaysWebView({ overlay: false });
+      await StatusBar.setStyle({ style: Style.Light });
+      await StatusBar.setOverlaysWebView({ overlay: true });
     } catch (error) {
       console.log('Status bar not available:', error);
     }

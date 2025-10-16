@@ -20,7 +20,7 @@ html {
   background-color: white;
 }
 
-/* iOS Status Bar - White Background */
+/* iOS Status Bar - Natural iOS behavior */
 body {
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
@@ -34,20 +34,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: white !important;
-}
-
-/* Ensure white background extends into status bar area */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top, 44px);
   background-color: white;
-  z-index: 9999;
-  pointer-events: none;
 }
 
 /* App container with safe areas and scrolling */
@@ -59,10 +46,11 @@ body::before {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding-top: 0;
-  padding-bottom: 0;
-  padding-left: 0;
-  padding-right: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   position: relative;
+  background-color: white;
 }
 
 /* Disable text selection on mobile */
@@ -127,6 +115,9 @@ header[id="app-header"] {
   right: 0 !important;
   padding-top: var(--safe-area-inset-top) !important;
   z-index: 50 !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
 }
 
 /* Footer/Navbar safe area - fixed positioning with safe area */

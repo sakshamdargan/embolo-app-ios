@@ -24,8 +24,9 @@ const Layout = ({ children }: LayoutProps) => {
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // Calculate padding based on actual header/footer heights
-  const topPadding = `${headerHeight}px`;
+  // Calculate padding based on actual header/footer heights + status bar
+  const statusBarHeight = isNative ? 44 : 0; // Approximate status bar height
+  const topPadding = `${headerHeight + statusBarHeight}px`;
   const bottomPadding = `${footerHeight + 16}px`;
 
   return (

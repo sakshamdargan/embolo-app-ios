@@ -37,8 +37,8 @@ const config: CapacitorConfig = {
       presentationOptions: ['badge', 'sound', 'alert']
     },
     StatusBar: {
-      style: 'DARK',
-      overlaysWebView: false
+      style: 'LIGHT',
+      overlaysWebView: true
     },
     CapacitorHttp: {
       enabled: true
