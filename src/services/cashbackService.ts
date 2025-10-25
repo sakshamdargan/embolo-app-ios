@@ -36,14 +36,22 @@ const makeRequest = async (config: any): Promise<any> => {
         headers: headers,
       };
       
-      // Only add data if it exists (for POST/PUT requests)
+      // Only add data if it exists and properly serialize it
       if (config.data) {
-        requestOptions.data = config.data;
+        // If data is already a string, use it. Otherwise stringify it.
+        requestOptions.data = typeof config.data === 'string' 
+          ? config.data 
+          : JSON.stringify(config.data);
       }
       
-      // Only add params if they exist (for GET requests)
-      if (config.params) {
-        requestOptions.params = config.params;
+      // Only add params if they exist - convert to simple key-value pairs
+      if (config.params && Object.keys(config.params).length > 0) {
+        // CapacitorHttp expects params as simple object with string values
+        const simpleParams: Record<string, string> = {};
+        Object.keys(config.params).forEach(key => {
+          simpleParams[key] = String(config.params[key]);
+        });
+        requestOptions.params = simpleParams;
       }
       
       const response: HttpResponse = await CapacitorHttp.request(requestOptions);
