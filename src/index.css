@@ -93,6 +93,33 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground font-poppins;
   }
+  
+  /* iOS Overscroll Bounce Fix - Prevent blank space at top/bottom */
+  html, body {
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+  }
+  
+  /* iOS Safe Area Support */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
 }
 
 @layer utilities {

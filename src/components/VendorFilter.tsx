@@ -95,13 +95,16 @@ const VendorFilter = () => {
 
       {/* Dropdown Panel */}
       <div
-        className={`fixed left-0 right-0 bottom-0 bg-white shadow-2xl z-50 overflow-hidden transition-all duration-300 ease-in-out border-t rounded-t-2xl ${
+        className={`fixed left-0 right-0 bg-white shadow-2xl z-50 overflow-hidden transition-all duration-300 ease-in-out border-t rounded-t-2xl ${
           isFilterOpen 
-            ? 'max-h-[50vh] opacity-100' 
-            : 'max-h-0 opacity-0'
+            ? 'max-h-[60vh] opacity-100' 
+            : 'max-h-0 opacity-0 pointer-events-none'
         }`}
         style={{
-          transform: isFilterOpen ? 'translateY(0)' : 'translateY(100%)',
+          bottom: isFilterOpen ? '0' : '-100%',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          transform: 'translate3d(0, 0, 0)',
+          WebkitTransform: 'translate3d(0, 0, 0)',
         }}
       >
         <div className="container mx-auto px-4 py-4">
@@ -134,7 +137,7 @@ const VendorFilter = () => {
           </div>
 
           {/* Vendor List */}
-          <div className="overflow-y-auto max-h-[calc(50vh-180px)] space-y-1">
+          <div className="overflow-y-auto max-h-[calc(50vh-180px)] space-y-1" style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}>
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">
                 Loading vendors...
