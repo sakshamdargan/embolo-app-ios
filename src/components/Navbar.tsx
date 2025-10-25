@@ -39,7 +39,14 @@ const Navbar = () => {
       </NavLink>
 
       {/* Bottom Navigation Bar */}
-      <nav id="app-footer" className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40">
+      <nav 
+        id="app-footer" 
+        className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-40"
+        style={{
+          paddingBottom: 0,
+          marginBottom: 0,
+        }}
+      >
         <div className="flex items-center justify-around h-16">
           {navItems.map(({ path, icon: Icon, label }) => (
             <NavLink

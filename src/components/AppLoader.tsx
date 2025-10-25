@@ -29,6 +29,13 @@ const AppLoader = ({ onLoadComplete }: AppLoaderProps) => {
   return (
     <div 
       className="fixed inset-0 bg-gradient-to-br from-[#00aa63] to-[#009955] flex flex-col items-center justify-center z-[9999] transition-opacity duration-300"
+      style={{
+        margin: 0,
+        padding: 0,
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+      }}
     >
       {/* Main text centered */}
       <div className="flex-1 flex items-center justify-center">
@@ -38,7 +45,7 @@ const AppLoader = ({ onLoadComplete }: AppLoaderProps) => {
       </div>
       
       {/* Tagline at bottom */}
-      <div className="pb-12">
+      <div className="pb-12 mb-0">
         <p className="text-white/90 text-base md:text-lg font-medium tracking-wide text-center">
           Your Meds, Our Priority
         </p>

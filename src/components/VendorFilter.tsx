@@ -95,16 +95,15 @@ const VendorFilter = () => {
 
       {/* Dropdown Panel */}
       <div
-        className={`fixed left-0 right-0 bg-white shadow-2xl z-50 overflow-hidden transition-all duration-300 ease-in-out border-t rounded-t-2xl ${
+        className={`fixed inset-x-0 bg-white shadow-2xl z-50 overflow-hidden transition-transform duration-300 ease-out border-t rounded-t-2xl ${
           isFilterOpen 
-            ? 'max-h-[60vh] opacity-100' 
-            : 'max-h-0 opacity-0 pointer-events-none'
+            ? 'translate-y-0' 
+            : 'translate-y-full'
         }`}
         style={{
-          bottom: isFilterOpen ? '0' : '-100%',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          transform: 'translate3d(0, 0, 0)',
-          WebkitTransform: 'translate3d(0, 0, 0)',
+          bottom: 0,
+          maxHeight: '60vh',
+          willChange: 'transform',
         }}
       >
         <div className="container mx-auto px-4 py-4">

@@ -98,10 +98,11 @@ All colors MUST be HSL.
   html, body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
-    position: fixed;
     width: 100%;
     height: 100%;
     overflow: hidden;
+    margin: 0;
+    padding: 0;
   }
   
   #root {
@@ -111,14 +112,6 @@ All colors MUST be HSL.
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
-  }
-  
-  /* iOS Safe Area Support */
-  @supports (padding: env(safe-area-inset-bottom)) {
-    body {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
   }
 }
 
