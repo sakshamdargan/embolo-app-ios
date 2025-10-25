@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useCartStore } from '@/store/useCartStore';
-import { api, Product } from '@/utils/api';
+import { api } from '@/utils/api';
+import productService, { Product } from '@/services/productService';
 import { toast } from 'sonner';
 import { Plus, Trash2, ShoppingCart, Search, X, Package } from 'lucide-react';
 
@@ -110,7 +111,14 @@ const Quick = () => {
       toast.error('Product already added');
       return;
     }
-    setSelectedProducts([...selectedProducts, product]);
+    
+    // Ensure product has a quantity property, default to 1 if not provided
+    const productWithQuantity = {
+      ...product,
+      quantity: (product as any).quantity || 1
+    };
+    
+    setSelectedProducts([...selectedProducts, productWithQuantity]);
     setSearchQuery('');
     setSearchResults([]);
   };
@@ -138,7 +146,7 @@ const Quick = () => {
         name: p.name,
         price: p.sale_price || p.regular_price || p.price,
         image: p.images?.[0]?.src || '/placeholder.svg',
-        quantity: 1,
+        quantity: (p as any).quantity || 1,
         vendorName: p.store?.name || 'Unknown Vendor',
       })),
       createdAt: new Date().toISOString(),
@@ -164,7 +172,7 @@ const Quick = () => {
       addItem({
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: product.price, // Template already has the correct price
         quantity: product.quantity,
         image: product.image,
         stock_quantity: null,
@@ -295,13 +303,11 @@ const Quick = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            Store Name Here
+                          <p className="text-xs text-muted-foreground mb-1 truncate">
+                            {product.vendorName || 'Unknown Vendor'}
                           </p>
                           <p className="text-xs text-primary">
-                            {product.price && parseFloat(product.price) > 0 
-                              ? `₹${parseFloat(product.price).toFixed(2)}` 
-                              : 'Price on request'}
+                            PTR: ₹{parseFloat(product.price || '0').toFixed(2)}
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">Qty: {product.quantity}</span>
@@ -327,39 +333,39 @@ const Quick = () => {
 
       {/* Create Template Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Template</DialogTitle>
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col fixed-center">
+          <DialogHeader className="flex-shrink-0 pb-2">
+            <DialogTitle className="text-base sm:text-lg">Create New Template</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-2 sm:py-4 overflow-y-auto flex-1 min-h-0 px-1">
             {/* Template Name */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Template Name*</label>
+            <div className="flex-shrink-0">
+              <label className="text-sm font-medium mb-1.5 block">Template Name*</label>
               <Input
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 placeholder="e.g. Weekly Meds"
-                className="w-full"
+                className="w-full h-9 text-sm focus-visible:ring-1 focus-visible:ring-offset-1"
               />
             </div>
 
             {/* Product Search */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">Search Products*</label>
+            <div className="flex-shrink-0">
+              <label className="text-sm font-medium mb-1.5 block">Search Products*</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Search products..."
-                  className="pl-10"
+                  className="pl-10 h-9 text-sm focus-visible:ring-1 focus-visible:ring-offset-1"
                 />
               </div>
               
               {/* Search Results */}
               {(searchLoading || searchResults.length > 0 || (searchQuery.trim() && !searchLoading)) && (
-                <div className="mt-2 border rounded-lg max-h-64 overflow-y-auto bg-card">
+                <div className="mt-2 border rounded-lg h-48 sm:h-64 overflow-y-auto bg-card flex-shrink-0">
                   {searchLoading ? (
                     <div className="p-4 text-center text-muted-foreground">
                       Loading products...
@@ -370,37 +376,50 @@ const Quick = () => {
                     </div>
                   ) : (
                     searchResults.map((product) => {
-                      const price = product.sale_price || product.regular_price || product.price;
+                      const ptr = productService.getFormattedPTR(product);
+                      const mrp = productService.getFormattedMRP(product);
+                      const hasDiscount = productService.hasDiscount(product);
                       const imageUrl = product.images?.[0]?.src || '/placeholder.svg';
                       
                       return (
                         <div
                           key={product.id}
-                          className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors border-b last:border-b-0"
-                          onClick={() => handleAddProductToTemplate(product)}
+                          className="flex items-center gap-2 p-2 hover:bg-muted/50 cursor-pointer transition-colors border-b last:border-b-0"
+                          onClick={(e) => {
+                            // Don't trigger if clicking on quantity controls
+                            if ((e.target as HTMLElement).closest('.quantity-controls')) {
+                              return;
+                            }
+                            
+                            // Get quantity from the input field in this row
+                            const input = (e.currentTarget as HTMLElement).querySelector('input[type="number"]') as HTMLInputElement;
+                            const qtyVal = input ? Number(input.value || '1') : 1;
+                            const productWithQty = { ...product, quantity: qtyVal };
+                            handleAddProductToTemplate(productWithQty as any);
+                          }}
                         >
                           <img
                             src={imageUrl}
                             alt={product.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded flex-shrink-0"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '/placeholder.svg';
                             }}
                           />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{product.name}</p>
-                            <p className="text-xs text-muted-foreground mb-1">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 truncate">
                               {product.store?.name || 'Unknown Vendor'}
                             </p>
-                            <div className="flex items-center justify-between text-xs gap-4">
-                              <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
-                              <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
+                            <div className="flex items-center gap-2 text-[10px] sm:text-xs">
+                              <span className="text-muted-foreground">PTR: <span className="font-semibold text-primary">{ptr}</span></span>
+                              <span className="text-muted-foreground">MRP: <span className="font-semibold">{mrp}</span></span>
                             </div>
                           </div>
                           
-                          {/* Quantity Selector */}
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center border-2 border-border rounded-md overflow-hidden">
+                          {/* Compact Quantity Selector */}
+                          <div className="flex items-center gap-1 flex-shrink-0 quantity-controls">
+                            <div className="flex items-center border border-border rounded overflow-hidden">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -410,7 +429,7 @@ const Quick = () => {
                                   const next = Math.max(1, current - 1);
                                   if (input) input.value = String(next);
                                 }}
-                                className="h-8 w-8 text-sm hover:bg-gray-100"
+                                className="h-6 w-6 text-xs hover:bg-gray-100 flex items-center justify-center"
                               >
                                 −
                               </button>
@@ -419,7 +438,7 @@ const Quick = () => {
                                 min="1"
                                 max={product.stock_quantity || 999}
                                 defaultValue="1"
-                                className="px-2 min-w-[2.5rem] text-center text-xs font-semibold border-x-2 border-border h-8 bg-transparent focus:outline-none"
+                                className="w-8 text-center text-[10px] font-semibold border-x border-border h-6 bg-transparent focus:outline-none"
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 1;
@@ -474,7 +493,7 @@ const Quick = () => {
                                     }, 3000);
                                   }
                                 }}
-                                className="h-8 w-8 text-sm hover:bg-gray-100"
+                                className="h-6 w-6 text-xs hover:bg-gray-100 flex items-center justify-center"
                               >
                                 +
                               </button>
@@ -482,6 +501,7 @@ const Quick = () => {
                             <Button 
                               size="sm" 
                               variant="outline"
+                              className="h-6 px-2 text-[10px]"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const input = (e.currentTarget.previousSibling as HTMLElement)?.querySelector('input') as HTMLInputElement | null;
@@ -514,37 +534,40 @@ const Quick = () => {
                 <label className="text-sm font-medium mb-2 block">
                   Selected Products ({selectedProducts.length})
                 </label>
-                <div className="border rounded-lg p-3 space-y-2 max-h-64 overflow-y-auto bg-muted/10">
+                <div className="border rounded-lg p-2 sm:p-3 space-y-2 h-32 sm:h-48 overflow-y-auto bg-muted/10 flex-shrink-0">
                   {selectedProducts.map((product) => {
-                    const price = product.sale_price || product.regular_price || product.price;
+                    const ptr = productService.getFormattedPTR(product);
+                    const mrp = productService.getFormattedMRP(product);
+                    const hasDiscount = productService.hasDiscount(product);
+                    const sellingPrice = productService.getSellingPrice(product);
                     const imageUrl = product.images?.[0]?.src || '/placeholder.svg';
                     
                     return (
                       <div
                         key={product.id}
-                        className="flex items-center gap-3 p-2 bg-card rounded-lg"
+                        className="flex items-center gap-2 p-2 bg-card rounded-lg"
                       >
                         <img
                           src={imageUrl}
                           alt={product.name}
-                          className="w-12 h-12 object-cover rounded"
+                          className="w-8 h-8 sm:w-10 sm:h-10 object-cover rounded flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-muted-foreground mb-1">
+                          <p className="font-medium text-xs sm:text-sm truncate">{product.name}</p>
+                          <p className="text-[10px] sm:text-xs text-muted-foreground mb-1 truncate">
                             {product.store?.name || 'Unknown Vendor'}
                           </p>
-                          <div className="flex items-center justify-between text-xs gap-4 mb-1">
-                            <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
-                            <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
+                          <div className="flex items-center gap-2 text-[10px] sm:text-xs mb-1">
+                            <span className="text-muted-foreground">PTR: <span className="font-semibold text-primary">{ptr}</span></span>
+                            <span className="text-muted-foreground">MRP: <span className="font-semibold">{mrp}</span></span>
                           </div>
-                          <p className="text-xs text-primary font-medium">
-                            Quantity: {(product as any).quantity || 1}
+                          <p className="text-[10px] sm:text-xs text-primary font-medium">
+                            Qty: {(product as any).quantity} × {ptr} = ₹{((product as any).quantity * parseFloat(sellingPrice || '0')).toFixed(2)}
                           </p>
                         </div>
                         <Button
-                          size="icon"
                           variant="ghost"
+                          size="sm"
                           onClick={() => handleRemoveProductFromTemplate(product.id)}
                           className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8"
                         >
@@ -558,11 +581,11 @@ const Quick = () => {
             )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={resetModal}>
+          <DialogFooter className="flex-shrink-0 pt-3 gap-2 sm:gap-4">
+            <Button variant="outline" onClick={resetModal} className="h-9 text-sm flex-1 sm:flex-none">
               Cancel
             </Button>
-            <Button onClick={handleSaveTemplate}>
+            <Button onClick={handleSaveTemplate} className="h-9 text-sm flex-1 sm:flex-none">
               Save Template
             </Button>
           </DialogFooter>

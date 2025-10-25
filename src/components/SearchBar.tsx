@@ -6,6 +6,7 @@ import { useCartStore } from '@/store/useCartStore';
 import { useVendorStore } from '@/store/useVendorStore';
 import { api, Product } from '@/utils/api';
 import { toast } from 'sonner';
+import productService from '@/services/productService';
 
 interface SearchBarProps {
   value: string;
@@ -201,8 +202,8 @@ const SearchBar = ({ value, onChange, placeholder = "Search products...", onSear
                         </p>
                       )}
                       <div className="flex items-center justify-between text-xs gap-4">
-                        <span className="text-muted-foreground">PTR: ₹{product.regular_price || '0'}</span>
-                        <span className="text-muted-foreground">MRP: ₹{parseFloat(price || '0').toFixed(2)}</span>
+                        <span className="text-muted-foreground">PTR: <span className="font-semibold text-primary">{productService.getFormattedPTR(product)}</span></span>
+                        <span className="text-muted-foreground">MRP: <span className="font-semibold">{productService.getFormattedMRP(product)}</span></span>
                       </div>
                     </div>
 
