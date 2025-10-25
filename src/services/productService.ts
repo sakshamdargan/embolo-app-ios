@@ -325,12 +325,19 @@ class ProductService {
   // Format price for display
   formatPrice(price: string | number): string {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(numPrice);
+    
+    try {
+      // Format with 2 decimal places
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(numPrice);
+    } catch (error) {
+      // Fallback for iOS WebView compatibility
+      return `₹${numPrice.toFixed(2)}`;
+    }
   }
 
   // Calculate discount percentage
@@ -391,6 +398,118 @@ class ProductService {
       default:
         return 'text-gray-600';
     }
+  }
+
+  // iOS WebView compatible price extraction
+  private extractPrice(price: any): string {
+    if (price === null || price === undefined) return '0';
+    
+    // Handle different data types that might come from API
+    let priceStr = '';
+    if (typeof price === 'string') {
+      priceStr = price;
+    } else if (typeof price === 'number') {
+      priceStr = price.toString();
+    } else if (typeof price === 'object' && price !== null) {
+      // Sometimes API might return object, try to extract value
+      priceStr = price.value || price.amount || price.price || '0';
+    } else {
+      priceStr = String(price);
+    }
+    
+    // Clean and validate
+    priceStr = priceStr.toString().trim();
+    
+    // Remove any currency symbols or extra characters
+    priceStr = priceStr.replace(/[^\d.]/g, '');
+    
+    return priceStr && priceStr !== '' && priceStr !== '0' ? priceStr : '0';
+  }
+
+  // Get MRP (Maximum Retail Price) - regular_price from WordPress
+  getMRP(product: Product): string {
+    return this.extractPrice(product.regular_price);
+  }
+
+  // Get PTR (Price to Retailer) - sale_price from WordPress
+  getPTR(product: Product): string {
+    const salePrice = this.extractPrice(product.sale_price);
+    const regularPrice = this.extractPrice(product.regular_price);
+    
+    if (salePrice && salePrice !== '0') {
+      return salePrice;
+    }
+    return regularPrice;
+  }
+
+  // Format MRP for display
+  getFormattedMRP(product: Product): string {
+    const mrp = this.getMRP(product);
+    return this.formatPrice(mrp);
+  }
+
+  // Format PTR for display
+  getFormattedPTR(product: Product): string {
+    const ptr = this.getPTR(product);
+    return this.formatPrice(ptr);
+  }
+
+  // Get effective selling price (PTR is what customer pays)
+  getSellingPrice(product: Product): string {
+    return this.getPTR(product);
+  }
+
+  // Check if product has discount (MRP > PTR)
+  hasDiscount(product: Product): boolean {
+    const mrp = parseFloat(this.getMRP(product));
+    const ptr = parseFloat(this.getPTR(product));
+    return mrp > ptr && ptr > 0;
+  }
+
+  // Calculate discount percentage using MRP and PTR
+  getDiscountPercentage(product: Product): number {
+    const mrp = this.getMRP(product);
+    const ptr = this.getPTR(product);
+    return this.calculateDiscountPercentage(mrp, ptr);
+  }
+
+  // Calculate savings amount (MRP - PTR)
+  getSavingsAmount(product: Product): number {
+    const mrp = parseFloat(this.getMRP(product));
+    const ptr = parseFloat(this.getPTR(product));
+    return this.hasDiscount(product) ? mrp - ptr : 0;
+  }
+
+  // Get formatted savings amount
+  getFormattedSavings(product: Product): string {
+    const savings = this.getSavingsAmount(product);
+    return savings > 0 ? this.formatPrice(savings) : '';
+  }
+
+  // Check if product has actual server image (not placeholder)
+  hasActualImage(product: Product): boolean {
+    if (!product.images || product.images.length === 0) return false;
+    const imageUrl = product.images[0]?.src || '';
+    return imageUrl && 
+           !imageUrl.includes('placeholder') && 
+           !imageUrl.includes('default') &&
+           !imageUrl.includes('no-image') &&
+           imageUrl.startsWith('http');
+  }
+
+  // Sort products by image priority (actual images first)
+  sortByImagePriority(products: Product[]): Product[] {
+    return [...products].sort((a, b) => {
+      const aHasImage = this.hasActualImage(a);
+      const bHasImage = this.hasActualImage(b);
+      
+      // Products with actual images come first
+      if (aHasImage && !bHasImage) return -1;
+      if (!aHasImage && bHasImage) return 1;
+      
+      // If both have images or both don't have images, maintain original order
+      return 0;
+    });
   }
 }
 
