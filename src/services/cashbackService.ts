@@ -1,8 +1,66 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 
 const API_BASE_URL = 'https://embolo.in/wp-json/embolo/v1';
 
-// Create axios instance with proper JWT token and interceptors
+// iOS-compatible HTTP client wrapper
+const makeRequest = async (config: any): Promise<any> => {
+  // Use CapacitorHttp for iOS to avoid CORS issues
+  if (Capacitor.isNativePlatform()) {
+    const token = localStorage.getItem('eco_swift_token');
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('No JWT token found for cashback request');
+    }
+    
+    // Build full URL
+    const url = config.url?.startsWith('http') 
+      ? config.url 
+      : `${API_BASE_URL}${config.url}`;
+    
+    console.log(`📱 iOS Cashback Request: ${config.method || 'GET'} ${url}`);
+    
+    try {
+      const response: HttpResponse = await CapacitorHttp.request({
+        method: config.method || 'GET',
+        url,
+        headers,
+        data: config.data,
+        params: config.params,
+      });
+      
+      console.log(`📱 iOS Cashback Response: ${response.status}`, response.data);
+      
+      // Format response to match axios structure
+      return {
+        data: response.data,
+        status: response.status,
+        headers: response.headers,
+      };
+    } catch (error: any) {
+      console.error(`📱 iOS Cashback Request Error:`, error);
+      
+      // Handle 401/403 errors
+      if (error.status === 401 || error.status === 403) {
+        console.error('Cashback API authentication failed - token expired or invalid');
+      }
+      
+      throw error;
+    }
+  }
+  
+  // Use axios for web
+  return axios(config);
+};
+
+// Create axios instance with proper JWT token and interceptors (for web)
 const cashbackAPI = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
@@ -11,7 +69,7 @@ const cashbackAPI = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Add request interceptor to include auth token (for web)
 cashbackAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('eco_swift_token');
@@ -27,7 +85,7 @@ cashbackAPI.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle auth errors
+// Add response interceptor to handle auth errors (for web)
 cashbackAPI.interceptors.response.use(
   (response) => {
     // No sliding session - JWT token is valid for fixed 30 days
@@ -103,7 +161,11 @@ class CashbackService {
   // Get cashback for specific order
   async getOrderCashback(orderId: number): Promise<CashbackEntry> {
     try {
-      const response = await cashbackAPI.get(`/cashback/order/${orderId}`);
+      const response = await makeRequest({
+        method: 'GET',
+        url: `/cashback/order/${orderId}`,
+        baseURL: API_BASE_URL
+      });
       
       // Handle WordPress REST API response format
       if (response.data && response.data.success && response.data.data) {
@@ -138,7 +200,11 @@ class CashbackService {
 
   // Get cashback preview/estimate
   async getCashbackPreview(orderValue: number = 0): Promise<CashbackPreview> {
-    const response = await cashbackAPI.get(`/cashback/preview?order_value=${orderValue}`);
+    const response = await makeRequest({
+      method: 'GET',
+      url: `/cashback/preview?order_value=${orderValue}`,
+      baseURL: API_BASE_URL
+    });
     
     console.log('Raw preview API response:', response.data);
     
@@ -174,7 +240,11 @@ class CashbackService {
       params.append('status', status);
     }
     
-    const response = await cashbackAPI.get(`/cashback/history?${params}`);
+    const response = await makeRequest({
+      method: 'GET',
+      url: `/cashback/history?${params}`,
+      baseURL: API_BASE_URL
+    });
     return response.data;
   }
 
@@ -197,9 +267,14 @@ class CashbackService {
     algorithm_data: any;
   }> {
     try {
-      const response = await cashbackAPI.post('/cashback/process', {
-        order_id: orderId,
-        order_value: orderValue,
+      const response = await makeRequest({
+        method: 'POST',
+        url: '/cashback/process',
+        baseURL: API_BASE_URL,
+        data: {
+          order_id: orderId,
+          order_value: orderValue,
+        }
       });
       
       console.log('Raw API response:', response.data);
@@ -261,7 +336,11 @@ class CashbackService {
 
   // Get wallet details
   async getWalletDetails(): Promise<WalletDetails> {
-    const response = await cashbackAPI.get('/wallet');
+    const response = await makeRequest({
+      method: 'GET',
+      url: '/wallet',
+      baseURL: API_BASE_URL
+    });
     return response.data.data;
   }
 
@@ -275,7 +354,11 @@ class CashbackService {
       has_more: boolean;
     };
   }> {
-    const response = await cashbackAPI.get(`/wallet/transactions?limit=${limit}&offset=${offset}`);
+    const response = await makeRequest({
+      method: 'GET',
+      url: `/wallet/transactions?limit=${limit}&offset=${offset}`,
+      baseURL: API_BASE_URL
+    });
     return response.data;
   }
 
@@ -298,7 +381,11 @@ class CashbackService {
       streak_performance: string;
     };
   }> {
-    const response = await cashbackAPI.get('/wallet/stats');
+    const response = await makeRequest({
+      method: 'GET',
+      url: '/wallet/stats',
+      baseURL: API_BASE_URL
+    });
     return response.data.data;
   }
 

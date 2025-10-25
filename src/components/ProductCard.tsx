@@ -110,8 +110,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
 
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">PTR: ₹0</span>
-            <span className="text-muted-foreground">MRP: ₹0</span>
+            <span className="text-muted-foreground">PTR: <span className="font-semibold text-primary">{productService.getFormattedPTR(product)}</span></span>
+            <span className="text-muted-foreground">MRP: <span className="font-semibold">{productService.getFormattedMRP(product)}</span></span>
           </div>
 
           {/* Ultra Responsive Quantity Selector for Small Phones */}

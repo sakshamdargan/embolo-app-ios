@@ -1,7 +1,71 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 
 // Configure axios for WordPress API
 const API_BASE_URL = 'https://embolo.in/wp-json/eco-swift/v1';
+
+// iOS-compatible HTTP client wrapper
+const makeRequest = async (config: any): Promise<any> => {
+  // Use CapacitorHttp for iOS to avoid CORS issues
+  if (Capacitor.isNativePlatform()) {
+    const token = localStorage.getItem('eco_swift_token');
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Build full URL
+    const url = config.url?.startsWith('http') 
+      ? config.url 
+      : `${API_BASE_URL}${config.url}`;
+    
+    console.log(`📱 iOS Order Request: ${config.method || 'GET'} ${url}`);
+    
+    try {
+      const response: HttpResponse = await CapacitorHttp.request({
+        method: config.method || 'GET',
+        url,
+        headers,
+        data: config.data,
+        params: config.params,
+        readTimeout: 60000,
+        connectTimeout: 60000,
+      });
+      
+      // Handle sliding session token
+      if (response.headers['x-jwt-token']) {
+        localStorage.setItem('eco_swift_token', response.headers['x-jwt-token']);
+      }
+      
+      console.log(`📱 iOS Order Response: ${response.status}`, response.data);
+      
+      // Format response to match axios structure
+      return {
+        data: response.data,
+        status: response.status,
+        headers: response.headers,
+      };
+    } catch (error: any) {
+      console.error(`📱 iOS Order Request Error:`, error);
+      
+      // Handle 401 errors
+      if (error.status === 401) {
+        localStorage.removeItem('eco_swift_token');
+        localStorage.removeItem('eco_swift_user');
+      }
+      
+      throw error;
+    }
+  }
+  
+  // Use axios for web
+  return axios(config);
+};
 
 const orderAPI = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +75,7 @@ const orderAPI = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Add request interceptor to include auth token (for web)
 orderAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('eco_swift_token');
@@ -25,7 +89,7 @@ orderAPI.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle auth errors
+// Add response interceptor to handle auth errors (for web)
 orderAPI.interceptors.response.use(
   (response) => {
     // 🔄 SLIDING SESSION: Update token if backend sent a new one
@@ -164,7 +228,13 @@ class OrderService {
   // Create a new order
   async createOrder(orderData: CreateOrderData): Promise<OrderResponse> {
     try {
-      const response = await orderAPI.post('/orders', orderData);
+      const response = await makeRequest({
+        method: 'POST',
+        url: '/orders',
+        baseURL: API_BASE_URL,
+        data: orderData,
+        timeout: 60000
+      });
       
       // Accept any 2xx response as success
       if (response.status >= 200 && response.status < 300) {
@@ -189,7 +259,12 @@ class OrderService {
   // Get user orders with pagination
   async getOrders(params: OrdersParams = {}): Promise<OrdersResponse> {
     try {
-      const response = await orderAPI.get('/orders', { params });
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/orders',
+        baseURL: API_BASE_URL,
+        params
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch orders');
@@ -199,7 +274,11 @@ class OrderService {
   // Get single order
   async getOrder(orderId: number): Promise<OrderResponse> {
     try {
-      const response = await orderAPI.get(`/orders/${orderId}`);
+      const response = await makeRequest({
+        method: 'GET',
+        url: `/orders/${orderId}`,
+        baseURL: API_BASE_URL
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch order');
@@ -209,7 +288,12 @@ class OrderService {
   // Update order status (limited to customer-allowed statuses)
   async updateOrderStatus(orderId: number, status: string): Promise<OrderResponse> {
     try {
-      const response = await orderAPI.put(`/orders/${orderId}/status`, { status });
+      const response = await makeRequest({
+        method: 'PUT',
+        url: `/orders/${orderId}/status`,
+        baseURL: API_BASE_URL,
+        data: { status }
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update order status');

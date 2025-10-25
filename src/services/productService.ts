@@ -1,7 +1,69 @@
 import axios from 'axios';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorHttp, HttpResponse } from '@capacitor/core';
 
 // Configure axios for WordPress API
 const API_BASE_URL = 'https://embolo.in/wp-json/eco-swift/v1';
+
+// iOS-compatible HTTP client wrapper
+const makeRequest = async (config: any): Promise<any> => {
+  // Use CapacitorHttp for iOS to avoid CORS issues
+  if (Capacitor.isNativePlatform()) {
+    const token = localStorage.getItem('eco_swift_token');
+    const headers: any = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Build full URL
+    const url = config.url?.startsWith('http') 
+      ? config.url 
+      : `${API_BASE_URL}${config.url}`;
+    
+    console.log(`📱 iOS Request: ${config.method || 'GET'} ${url}`);
+    
+    try {
+      const response: HttpResponse = await CapacitorHttp.request({
+        method: config.method || 'GET',
+        url,
+        headers,
+        data: config.data,
+        params: config.params,
+      });
+      
+      // Handle sliding session token
+      if (response.headers['x-jwt-token']) {
+        localStorage.setItem('eco_swift_token', response.headers['x-jwt-token']);
+      }
+      
+      console.log(`📱 iOS Response: ${response.status}`, response.data);
+      
+      // Format response to match axios structure
+      return {
+        data: response.data,
+        status: response.status,
+        headers: response.headers,
+      };
+    } catch (error: any) {
+      console.error(`📱 iOS Request Error:`, error);
+      
+      // Handle 401 errors
+      if (error.status === 401) {
+        localStorage.removeItem('eco_swift_token');
+        localStorage.removeItem('eco_swift_user');
+      }
+      
+      throw error;
+    }
+  }
+  
+  // Use axios for web
+  return axios(config);
+};
 
 const productAPI = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +73,7 @@ const productAPI = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Add request interceptor to include auth token (for web)
 productAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('eco_swift_token');
@@ -25,7 +87,7 @@ productAPI.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle auth errors
+// Add response interceptor to handle auth errors (for web)
 productAPI.interceptors.response.use(
   (response) => {
     // 🔄 SLIDING SESSION: Update token if backend sent a new one
@@ -201,7 +263,12 @@ class ProductService {
   // Get products with pagination and filtering
   async getProducts(params: ProductsParams = {}): Promise<ProductsResponse> {
     try {
-      const response = await productAPI.get('/products', { params });
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/products',
+        baseURL: API_BASE_URL,
+        params
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch products');
@@ -211,7 +278,12 @@ class ProductService {
   // Search products
   async searchProducts(params: SearchParams): Promise<SearchResponse> {
     try {
-      const response = await productAPI.get('/products/search', { params });
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/products/search',
+        baseURL: API_BASE_URL,
+        params
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to search products');
@@ -221,7 +293,11 @@ class ProductService {
   // Get single product
   async getProduct(id: number): Promise<ProductResponse> {
     try {
-      const response = await productAPI.get(`/products/${id}`);
+      const response = await makeRequest({
+        method: 'GET',
+        url: `/products/${id}`,
+        baseURL: API_BASE_URL
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch product');
@@ -231,7 +307,12 @@ class ProductService {
   // Get categories
   async getCategories(params: { per_page?: number; hide_empty?: boolean } = {}): Promise<CategoriesResponse> {
     try {
-      const response = await productAPI.get('/categories', { params });
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/categories',
+        baseURL: API_BASE_URL,
+        params
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch categories');
@@ -241,7 +322,12 @@ class ProductService {
   // Get vendors/wholesalers
   async getVendors(params: VendorsParams = {}): Promise<VendorsResponse> {
     try {
-      const response = await productAPI.get('/vendors', { params });
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/vendors',
+        baseURL: API_BASE_URL,
+        params
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch vendors');
@@ -251,8 +337,11 @@ class ProductService {
   // Get featured products
   async getFeaturedProducts(per_page: number = 10): Promise<ProductsResponse> {
     try {
-      const response = await productAPI.get('/products/featured', { 
-        params: { per_page } 
+      const response = await makeRequest({
+        method: 'GET',
+        url: '/products/featured',
+        baseURL: API_BASE_URL,
+        params: { per_page }
       });
       return {
         success: response.data.success,
@@ -325,12 +414,19 @@ class ProductService {
   // Format price for display
   formatPrice(price: string | number): string {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(numPrice);
+    
+    try {
+      // Format with 2 decimal places
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(numPrice);
+    } catch (error) {
+      // Fallback for iOS WebView compatibility
+      return `₹${numPrice.toFixed(2)}`;
+    }
   }
 
   // Calculate discount percentage
@@ -391,6 +487,118 @@ class ProductService {
       default:
         return 'text-gray-600';
     }
+  }
+
+  // iOS WebView compatible price extraction
+  private extractPrice(price: any): string {
+    if (price === null || price === undefined) return '0';
+    
+    // Handle different data types that might come from API
+    let priceStr = '';
+    if (typeof price === 'string') {
+      priceStr = price;
+    } else if (typeof price === 'number') {
+      priceStr = price.toString();
+    } else if (typeof price === 'object' && price !== null) {
+      // Sometimes API might return object, try to extract value
+      priceStr = price.value || price.amount || price.price || '0';
+    } else {
+      priceStr = String(price);
+    }
+    
+    // Clean and validate
+    priceStr = priceStr.toString().trim();
+    
+    // Remove any currency symbols or extra characters
+    priceStr = priceStr.replace(/[^\d.]/g, '');
+    
+    return priceStr && priceStr !== '' && priceStr !== '0' ? priceStr : '0';
+  }
+
+  // Get MRP (Maximum Retail Price) - regular_price from WordPress
+  getMRP(product: Product): string {
+    return this.extractPrice(product.regular_price);
+  }
+
+  // Get PTR (Price to Retailer) - sale_price from WordPress
+  getPTR(product: Product): string {
+    const salePrice = this.extractPrice(product.sale_price);
+    const regularPrice = this.extractPrice(product.regular_price);
+    
+    if (salePrice && salePrice !== '0') {
+      return salePrice;
+    }
+    return regularPrice;
+  }
+
+  // Format MRP for display
+  getFormattedMRP(product: Product): string {
+    const mrp = this.getMRP(product);
+    return this.formatPrice(mrp);
+  }
+
+  // Format PTR for display
+  getFormattedPTR(product: Product): string {
+    const ptr = this.getPTR(product);
+    return this.formatPrice(ptr);
+  }
+
+  // Get effective selling price (PTR is what customer pays)
+  getSellingPrice(product: Product): string {
+    return this.getPTR(product);
+  }
+
+  // Check if product has discount (MRP > PTR)
+  hasDiscount(product: Product): boolean {
+    const mrp = parseFloat(this.getMRP(product));
+    const ptr = parseFloat(this.getPTR(product));
+    return mrp > ptr && ptr > 0;
+  }
+
+  // Calculate discount percentage using MRP and PTR
+  getDiscountPercentage(product: Product): number {
+    const mrp = this.getMRP(product);
+    const ptr = this.getPTR(product);
+    return this.calculateDiscountPercentage(mrp, ptr);
+  }
+
+  // Calculate savings amount (MRP - PTR)
+  getSavingsAmount(product: Product): number {
+    const mrp = parseFloat(this.getMRP(product));
+    const ptr = parseFloat(this.getPTR(product));
+    return this.hasDiscount(product) ? mrp - ptr : 0;
+  }
+
+  // Get formatted savings amount
+  getFormattedSavings(product: Product): string {
+    const savings = this.getSavingsAmount(product);
+    return savings > 0 ? this.formatPrice(savings) : '';
+  }
+
+  // Check if product has actual server image (not placeholder)
+  hasActualImage(product: Product): boolean {
+    if (!product.images || product.images.length === 0) return false;
+    const imageUrl = product.images[0]?.src || '';
+    return imageUrl && 
+           !imageUrl.includes('placeholder') && 
+           !imageUrl.includes('default') &&
+           !imageUrl.includes('no-image') &&
+           imageUrl.startsWith('http');
+  }
+
+  // Sort products by image priority (actual images first)
+  sortByImagePriority(products: Product[]): Product[] {
+    return [...products].sort((a, b) => {
+      const aHasImage = this.hasActualImage(a);
+      const bHasImage = this.hasActualImage(b);
+      
+      // Products with actual images come first
+      if (aHasImage && !bHasImage) return -1;
+      if (!aHasImage && bHasImage) return 1;
+      
+      // If both have images or both don't have images, maintain original order
+      return 0;
+    });
   }
 }
 

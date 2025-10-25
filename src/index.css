@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent modal wobbling/shaking */
+.fixed-center {
+  transform: translate(-50%, -50%) !important;
+  left: 50% !important;
+  top: 50% !important;
+  position: fixed !important;
+}
+
+/* Prevent content jumping in dialogs */
+[data-radix-dialog-content] {
+  will-change: auto !important;
+}
+
+/* Mobile keyboard handling for modals */
+@media (max-width: 640px) {
+  .fixed-center {
+    top: 45% !important;
+    max-height: 80vh !important;
+    margin: 0 8px !important;
+  }
+  
+  /* Ensure modal stays in viewport when keyboard appears - iOS Safari specific */
+  @supports (-webkit-touch-callout: none) {
+    .fixed-center {
+      top: 40% !important;
+      max-height: 75vh !important;
+    }
+  }
+}
+
+/* Prevent input focus from expanding outside modal */
+[data-radix-dialog-content] input:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 1px hsl(var(--ring)) !important;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
